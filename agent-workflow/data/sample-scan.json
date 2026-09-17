@@ -1,0 +1,56 @@
+{
+  "medications": [
+    {
+      "name": "Metformin",
+      "type": "tablet",
+      "category": "antidiabetic",
+      "purpose": "Blood sugar control",
+      "dosage": "500mg",
+      "frequency": "1-0-1",
+      "duration": "30 days",
+      "withFood": true,
+      "instructions": "Take with breakfast and dinner",
+      "sideEffects": ["Nausea", "Diarrhea"]
+    },
+    {
+      "name": "Amoxicillin",
+      "type": "capsule",
+      "category": "antibiotic",
+      "purpose": "Bacterial infection",
+      "dosage": "3000mg",
+      "frequency": "1-1-1",
+      "duration": "7 days",
+      "withFood": false,
+      "instructions": "Take on empty stomach",
+      "sideEffects": ["Rash", "Nausea"]
+    },
+    {
+      "name": "Zorbitol X",
+      "type": "tablet",
+      "category": "unknown",
+      "purpose": "Not specified",
+      "dosage": "100mg",
+      "frequency": "1-1-1-1",
+      "duration": "5 days",
+      "withFood": false,
+      "instructions": "As directed",
+      "sideEffects": []
+    },
+    {
+      "name": "Ibuprofen",
+      "type": "tablet",
+      "category": "nsaid",
+      "purpose": "Pain relief",
+      "dosage": "400mg",
+      "frequency": "1-1-1-1-1",
+      "duration": "5 days",
+      "withFood": true,
+      "instructions": "Take after meals",
+      "sideEffects": ["Stomach upset", "Dizziness"]
+    }
+  ],
+  "alerts": [],
+  "rawText": "Sample prescription - Metformin 500mg 1-0-1, Amoxicillin 3000mg 1-1-1, Zorbitol X 100mg 1-1-1-1, Ibuprofen 400mg 1-1-1-1-1",
+  "doctorName": "Dr. Priya Sharma",
+  "patientName": "Jainam Kapadia"
+}
