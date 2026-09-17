@@ -1,0 +1,12 @@
+[
+  { "name": "Paracetamol", "class": "analgesic", "dosageRangeMg": { "min": 250, "max": 1000 }, "maxFrequencyPerDay": 4 },
+  { "name": "Metformin", "class": "antidiabetic", "dosageRangeMg": { "min": 250, "max": 1000 }, "maxFrequencyPerDay": 3 },
+  { "name": "Lisinopril", "class": "ace_inhibitor", "dosageRangeMg": { "min": 2.5, "max": 40 }, "maxFrequencyPerDay": 1 },
+  { "name": "Atorvastatin", "class": "statin", "dosageRangeMg": { "min": 10, "max": 80 }, "maxFrequencyPerDay": 1 },
+  { "name": "Amoxicillin", "class": "antibiotic", "dosageRangeMg": { "min": 250, "max": 1000 }, "maxFrequencyPerDay": 3 },
+  { "name": "Ibuprofen", "class": "nsaid", "dosageRangeMg": { "min": 200, "max": 800 }, "maxFrequencyPerDay": 4 },
+  { "name": "Omeprazole", "class": "ppi", "dosageRangeMg": { "min": 10, "max": 40 }, "maxFrequencyPerDay": 1 },
+  { "name": "Cetirizine", "class": "antihistamine", "dosageRangeMg": { "min": 5, "max": 10 }, "maxFrequencyPerDay": 1 },
+  { "name": "Azithromycin", "class": "antibiotic", "dosageRangeMg": { "min": 250, "max": 500 }, "maxFrequencyPerDay": 1 },
+  { "name": "Losartan", "class": "arb", "dosageRangeMg": { "min": 25, "max": 100 }, "maxFrequencyPerDay": 1 }
+]
