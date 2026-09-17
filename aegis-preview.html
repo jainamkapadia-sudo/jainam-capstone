@@ -1,0 +1,3250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aegis - Second Opinion Health App Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #0D9488;
+      --primary-light: #14B8A6;
+      --primary-dark: #0F766E;
+      --primary-50: #F0FDFA;
+      --primary-100: #CCFBF1;
+      --accent: #F59E0B;
+      --accent-light: #FCD34D;
+      --bg: #F1F5F9;
+      --card: #FFFFFF;
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #94A3B8;
+      --border: #E2E8F0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+      --shadow-lg: 0 12px 32px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.05);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-lg: 20px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: var(--text-primary);
+    }
+
+    .preview-title {
+      color: rgba(255,255,255,0.5);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .phone-frame {
+      width: 375px;
+      height: 720px;
+      background: #111;
+      border-radius: 44px;
+      padding: 11px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.08),
+        0 25px 80px rgba(0,0,0,0.6),
+        0 0 120px rgba(13,148,136,0.08);
+      position: relative;
+    }
+
+    .phone-notch {
+      position: absolute;
+      top: 11px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 126px;
+      height: 30px;
+      background: #111;
+      border-radius: 0 0 20px 20px;
+      z-index: 10;
+    }
+
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      border-radius: 34px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: none;
+    }
+    .screen::-webkit-scrollbar { display: none; }
+    .screen.active { display: flex; }
+
+    .status-bar {
+      height: 44px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      flex-shrink: 0;
+    }
+    .status-bar .time { margin-top: 4px; font-size: 14px; letter-spacing: 0.5px; }
+    .status-icons { display: flex; gap: 5px; align-items: center; margin-top: 4px; }
+    .status-icons svg { width: 15px; height: 15px; }
+
+    /* ============ SPLASH ============ */
+    .splash-screen {
+      background: linear-gradient(160deg, #0D9488 0%, #0F766E 40%, #134E4A 100%);
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 40px 32px;
+      position: relative;
+      overflow: hidden;
+      height: 100%;
+    }
+    .splash-screen::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      right: -30%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: splashFloat 6s ease-in-out infinite;
+    }
+    .splash-screen::after {
+      content: '';
+      position: absolute;
+      bottom: -20%;
+      left: -20%;
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(20,184,166,0.2) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: splashFloat 8s ease-in-out infinite reverse;
+    }
+    .splash-screen .status-bar { color: rgba(255,255,255,0.8); }
+    .splash-logo {
+      width: 88px;
+      height: 88px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.15);
+      position: relative;
+      z-index: 1;
+      animation: splashLogoIn 0.8s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    .splash-logo svg { width: 46px; height: 46px; fill: #fff; animation: splashPulse 3s ease-in-out infinite; }
+    .splash-screen h1 {
+      color: #fff;
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+      position: relative;
+      z-index: 1;
+      animation: splashFadeUp 0.7s 0.2s ease-out both;
+    }
+    .splash-screen p {
+      color: rgba(255,255,255,0.7);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 44px;
+      max-width: 280px;
+      position: relative;
+      z-index: 1;
+      animation: splashFadeUp 0.7s 0.35s ease-out both;
+    }
+    .splash-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      position: relative;
+      z-index: 1;
+    }
+    .splash-btn:active { transform: scale(0.97); }
+    .splash-btn-primary {
+      background: #fff;
+      color: var(--primary-dark);
+      margin-bottom: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      animation: splashFadeUp 0.7s 0.5s ease-out both;
+    }
+    .splash-btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.9);
+      border: 1px solid rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      animation: splashFadeUp 0.7s 0.65s ease-out both;
+    }
+
+    /* ============ HOME ============ */
+    .home-header {
+      background: linear-gradient(160deg, #0D9488 0%, #0F766E 50%, #134E4A 100%);
+      padding: 0 20px 24px;
+      border-radius: 0 0 28px 28px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .home-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .home-header .status-bar { color: rgba(255,255,255,0.8); }
+    .home-header .greeting {
+      color: rgba(255,255,255,0.65);
+      font-size: 13px;
+      font-weight: 400;
+      margin-bottom: 2px;
+      letter-spacing: 0.3px;
+    }
+    .home-header .name {
+      color: #fff;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 18px;
+      letter-spacing: -0.3px;
+    }
+    .search-bar {
+      background: rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 13px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .search-bar svg { width: 18px; height: 18px; fill: rgba(255,255,255,0.45); flex-shrink: 0; }
+    .search-bar span { color: rgba(255,255,255,0.4); font-size: 14px; font-weight: 400; }
+
+    .home-body { padding: 20px; flex: 1; overflow-y: auto; }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 14px;
+      letter-spacing: -0.2px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .feature-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      border: 1px solid var(--border);
+    }
+    .feature-card:active { transform: scale(0.97); }
+    .feature-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .feature-icon svg { width: 22px; height: 22px; }
+    .feature-icon.green { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); }
+    .feature-icon.green svg { fill: #059669; }
+    .feature-icon.blue { background: linear-gradient(135deg, #DBEAFE, #BFDBFE); }
+    .feature-icon.blue svg { fill: #2563EB; }
+    .feature-icon.orange { background: linear-gradient(135deg, #FEF3C7, #FDE68A); }
+    .feature-icon.orange svg { fill: #D97706; }
+    .feature-icon.red { background: linear-gradient(135deg, #FEE2E2, #FECACA); }
+    .feature-icon.red svg { fill: #DC2626; }
+    .feature-card h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+    .feature-card p { font-size: 11px; color: var(--text-muted); line-height: 1.4; font-weight: 400; }
+
+    .today-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .today-card .label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .med-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #F1F5F9;
+    }
+    .med-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .med-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .med-dot.green { background: linear-gradient(135deg, #10B981, #059669); }
+    .med-dot.blue { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+    .med-dot.orange { background: linear-gradient(135deg, #F59E0B, #D97706); }
+    .med-info { flex: 1; }
+    .med-info .med-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .med-info .med-time { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .med-check {
+      width: 26px;
+      height: 26px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .med-check.done {
+      background: linear-gradient(135deg, #10B981, #059669);
+      border-color: transparent;
+    }
+    .med-check.done svg { width: 13px; height: 13px; fill: #fff; }
+
+    .scanner-screen { background: #0F172A; }
+    .scanner-screen .status-bar { color: rgba(255,255,255,0.8); }
+    .scanner-header {
+      padding: 0 20px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .scanner-header h2 { color: #fff; font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
+    .scan-mode-toggle {
+      display: flex;
+      background: rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 3px;
+      margin: 0 20px 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .scan-mode-btn {
+      flex: 1;
+      padding: 10px 8px;
+      border: none;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: rgba(255,255,255,0.35);
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .scan-mode-btn svg { width: 14px; height: 14px; fill: currentColor; }
+    .scan-mode-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(13,148,136,0.4);
+    }
+    .strip-count {
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+    .done-strips-btn {
+      width: calc(100% - 40px);
+      margin: 0 20px 8px;
+      padding: 12px;
+      border: none;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #2563EB;
+      color: #fff;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s;
+    }
+    .done-strips-btn:active { transform: scale(0.97); }
+    .done-strips-btn svg { width: 18px; height: 18px; fill: #fff; }
+    .done-strips-btn.visible { display: flex; }
+    .strip-preview-bar {
+      display: none;
+      padding: 0 20px 8px;
+      overflow-x: auto;
+      gap: 8px;
+      scrollbar-width: none;
+    }
+    .strip-preview-bar::-webkit-scrollbar { display: none; }
+    .strip-preview-bar.visible { display: flex; }
+    .strip-thumb {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      border: 2px solid var(--primary);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .scanner-close {
+      width: 34px;
+      height: 34px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .scanner-close:hover { background: rgba(255,255,255,0.15); }
+    .scanner-close svg { width: 16px; height: 16px; fill: #fff; }
+    .scanner-viewport {
+      flex: 1;
+      margin: 0 20px;
+      border-radius: 22px;
+      border: 2px solid rgba(13,148,136,0.4);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #1E293B;
+    }
+    .scanner-viewport video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 20px;
+    }
+    .scanner-viewport canvas { display: none; }
+    .scanner-viewport img#capturedImage {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 20px;
+      display: none;
+    }
+    .scan-frame {
+      position: absolute;
+      width: 80%;
+      height: 50%;
+      border: 2px solid var(--primary);
+      border-radius: 14px;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .scan-line {
+      position: absolute;
+      top: 0;
+      left: 10%;
+      width: 80%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--primary-light), transparent);
+      animation: scanMove 2s ease-in-out infinite;
+      box-shadow: 0 0 12px rgba(20,184,166,0.5);
+    }
+    @keyframes scanMove {
+      0%, 100% { top: 0; }
+      50% { top: 100%; }
+    }
+    .scan-corners {
+      position: absolute;
+      inset: -4px;
+    }
+    .scan-corners::before, .scan-corners::after,
+    .scan-corners span::before, .scan-corners span::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-color: var(--primary-light);
+      border-style: solid;
+    }
+    .scan-corners::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 6px 0 0 0; }
+    .scan-corners::after { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 6px 0 0; }
+    .scan-corners span::before { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
+    .scan-corners span::after { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
+
+    .scan-frame.locked {
+      border-color: #10B981;
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.25);
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .scan-frame.locked .scan-corners::before,
+    .scan-frame.locked .scan-corners::after,
+    .scan-frame.locked .scan-corners span::before,
+    .scan-frame.locked .scan-corners span::after {
+      border-color: #10B981;
+    }
+    .scan-line.sweeping {
+      background: linear-gradient(90deg, transparent, #10B981, transparent);
+      box-shadow: 0 0 12px rgba(16,185,129,0.6);
+      animation: scanSweep 1.2s ease-in-out 1 forwards;
+    }
+    @keyframes scanSweep {
+      0% { top: 92%; opacity: 0; }
+      12% { opacity: 1; }
+      88% { opacity: 1; }
+      100% { top: 4%; opacity: 0; }
+    }
+
+    .camera-error {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 30px;
+      z-index: 3;
+    }
+    .camera-error.visible { display: flex; }
+    .camera-error svg { width: 48px; height: 48px; fill: rgba(255,255,255,0.2); margin-bottom: 16px; }
+    .camera-error h3 { color: #fff; font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .camera-error p { color: rgba(255,255,255,0.4); font-size: 12px; line-height: 1.5; }
+
+    .scanner-hint {
+      text-align: center;
+      padding: 18px;
+      color: rgba(255,255,255,0.35);
+      font-size: 13px;
+      font-weight: 400;
+    }
+    .scanner-bottom {
+      padding: 12px 20px 24px;
+      display: flex;
+      gap: 12px;
+    }
+    .scan-btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s;
+    }
+    .scan-btn:active { transform: scale(0.97); }
+    .scan-btn svg { width: 18px; height: 18px; }
+    .scan-btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(13,148,136,0.3); }
+    .scan-btn-primary:disabled { background: #5EEAD4; opacity: 0.5; cursor: not-allowed; }
+    .scan-btn-secondary { background: rgba(255,255,255,0.06); color: #fff; border: 1px solid rgba(255,255,255,0.08); }
+    .scan-btn-secondary svg { fill: #fff; }
+
+    .result-screen { background: var(--bg); }
+    .result-header {
+      padding: 0 20px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .back-btn {
+      width: 38px;
+      height: 38px;
+      background: var(--card);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      transition: transform 0.15s;
+    }
+    .back-btn:active { transform: scale(0.93); }
+    .back-btn svg { width: 18px; height: 18px; fill: var(--text-primary); }
+    .result-header h2 { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.2px; }
+    .result-body { padding: 0 20px 20px; flex: 1; overflow-y: auto; }
+
+    .raw-text-toggle {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+    }
+    .raw-text-toggle:hover { box-shadow: var(--shadow-sm); }
+    .raw-text-toggle h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .raw-text-toggle pre {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 80px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+
+    .alert-banner {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .alert-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, #F59E0B, #D97706);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .alert-icon svg { width: 18px; height: 18px; fill: #fff; }
+    .alert-text h4 { font-size: 13px; font-weight: 600; color: #92400E; margin-bottom: 2px; }
+    .alert-text p { font-size: 11px; color: #A16207; line-height: 1.5; }
+
+    .allergy-banner {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .allergy-banner .alert-icon { background: linear-gradient(135deg, #EF4444, #DC2626); }
+    .allergy-banner .alert-text h4 { color: #991B1B; }
+    .allergy-banner .alert-text p { color: #B91C1C; }
+
+    .disclaimer-list { margin: 4px 0 8px; padding-left: 16px; }
+    .disclaimer-list li { font-size: 11px; color: #A16207; line-height: 1.6; }
+    .disclaimer-footnote { font-size: 10px; color: #B45309; font-style: italic; opacity: 0.85; }
+
+    .food-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: #ECFDF5;
+      color: #047857;
+    }
+    .food-badge.empty { background: #FEF3C7; color: #92400E; }
+
+    .medicine-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+      transition: box-shadow 0.2s;
+    }
+    .medicine-card:hover { box-shadow: var(--shadow-md); }
+    .medicine-card .med-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .med-pill {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .med-pill svg { width: 20px; height: 20px; fill: #fff; }
+    .med-pill.green { background: linear-gradient(135deg, #10B981, #059669); }
+    .med-pill.blue { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+    .medicine-card .med-title { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.1px; }
+    .medicine-card .med-subtitle { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .medicine-card .med-purpose {
+      background: var(--primary-50);
+      color: var(--primary-dark);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+    .medicine-card .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 7px 0;
+      border-bottom: 1px solid #F8FAFC;
+    }
+    .medicine-card .detail-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .medicine-card .detail-label { font-size: 12px; color: var(--text-muted); }
+    .medicine-card .detail-value { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+
+    .side-effects { margin-top: 10px; }
+    .side-effects h4 { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+    .side-effect-tag {
+      display: inline-block;
+      background: #FEF3C7;
+      color: #92400E;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 4px 9px;
+      border-radius: 6px;
+      margin: 2px 4px 2px 0;
+    }
+
+    .add-schedule-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #0D9488, #0F766E);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(13,148,136,0.25);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .add-schedule-btn:active { transform: scale(0.97); }
+    .add-schedule-btn svg { width: 20px; height: 20px; fill: #fff; }
+
+    .schedule-screen { background: var(--bg); }
+    .schedule-header {
+      padding: 0 20px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .schedule-header h2 { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.2px; }
+    .schedule-body { padding: 0 20px 20px; flex: 1; overflow-y: auto; }
+    .schedule-banner {
+      background: linear-gradient(135deg, #CCFBF1, #99F6E4);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .schedule-banner svg { width: 22px; height: 22px; fill: var(--primary-dark); flex-shrink: 0; }
+    .schedule-banner-text { font-size: 12px; color: var(--primary-dark); line-height: 1.5; }
+    .schedule-banner-text strong { display: block; font-size: 13px; margin-bottom: 2px; }
+
+    .schedule-day-group {
+      margin-bottom: 16px;
+    }
+    .schedule-day-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 8px;
+      padding-left: 4px;
+    }
+    .schedule-slot {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+    }
+    .schedule-slot-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .schedule-time-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .schedule-time-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .schedule-time-icon svg { width: 16px; height: 16px; fill: #fff; }
+    .schedule-time-icon.morning { background: linear-gradient(135deg, #F59E0B, #D97706); }
+    .schedule-time-icon.afternoon { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+    .schedule-time-icon.evening { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
+    .schedule-time-icon.night { background: linear-gradient(135deg, #475569, #334155); }
+    .schedule-time-text { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.1px; }
+    .schedule-time-sub { font-size: 11px; color: var(--text-muted); }
+    .schedule-time-input {
+      padding: 7px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      outline: none;
+      width: 110px;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    .schedule-time-input:focus { border-color: var(--primary); }
+
+    .schedule-med-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-top: 1px solid #F8FAFC;
+    }
+    .schedule-med-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .schedule-med-name { font-size: 13px; font-weight: 500; color: var(--text-primary); flex: 1; }
+    .schedule-med-detail { font-size: 11px; color: var(--text-muted); }
+
+    .schedule-actions {
+      padding: 16px 20px 24px;
+      display: flex;
+      gap: 12px;
+    }
+    .schedule-btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s;
+    }
+    .schedule-btn:active { transform: scale(0.97); }
+    .schedule-btn svg { width: 18px; height: 18px; }
+    .schedule-btn-confirm {
+      background: linear-gradient(135deg, #0D9488, #0F766E);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(13,148,136,0.25);
+    }
+    .schedule-btn-back { background: var(--card); color: var(--text-secondary); border: 1px solid var(--border); }
+
+    .schedule-phone-section {
+      padding: 14px 20px 8px;
+      border-top: 1px solid var(--border);
+    }
+    .schedule-phone-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+    }
+    .schedule-phone-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .schedule-phone-input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      color: var(--text-primary);
+      background: var(--card);
+    }
+    .schedule-phone-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(13,148,136,0.1);
+    }
+    .schedule-phone-input::placeholder { color: var(--text-muted); }
+
+    .schedule-toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: var(--text-primary);
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 9999;
+      transition: transform 0.3s ease;
+      pointer-events: none;
+      box-shadow: var(--shadow-lg);
+    }
+    .schedule-toast.show { transform: translateX(-50%) translateY(0); }
+
+    .review-screen { background: var(--bg); }
+    .review-header {
+      padding: 0 20px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .review-header h2 { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.2px; }
+    .review-body { padding: 0 20px 20px; flex: 1; overflow-y: auto; }
+    .review-banner {
+      background: linear-gradient(135deg, #DBEAFE, #BFDBFE);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .review-banner svg { width: 22px; height: 22px; fill: #1D4ED8; flex-shrink: 0; }
+    .review-banner-text { font-size: 12px; color: #1E40AF; line-height: 1.5; }
+    .review-banner-text strong { display: block; font-size: 13px; margin-bottom: 2px; }
+
+    .review-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .review-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .review-card-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0D9488, #0F766E);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .review-card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .review-field {
+      margin-bottom: 12px;
+    }
+    .review-field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+    }
+    .review-field input {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+    .review-field input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(13,148,136,0.1);
+      background: var(--card);
+    }
+    .review-field-row {
+      display: flex;
+      gap: 10px;
+    }
+    .review-field-row .review-field { flex: 1; }
+
+    .review-card .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid #F8FAFC;
+    }
+    .review-card .detail-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .review-card .detail-label { font-size: 12px; color: var(--text-muted); }
+    .review-card .detail-value { font-size: 12px; font-weight: 600; color: var(--text-primary); text-align: right; }
+
+    .review-strip-thumb {
+      width: 100%;
+      max-height: 120px;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+    }
+
+    .review-actions {
+      padding: 16px 20px 24px;
+      display: flex;
+      gap: 12px;
+    }
+    .review-btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s;
+    }
+    .review-btn:active { transform: scale(0.97); }
+    .review-btn svg { width: 18px; height: 18px; }
+    .review-btn-confirm {
+      background: linear-gradient(135deg, #0D9488, #0F766E);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(13,148,136,0.25);
+    }
+    .review-btn-retake { background: var(--card); color: var(--text-secondary); border: 1px solid var(--border); }
+
+    .chat-screen {
+      background: var(--bg);
+      overflow-y: hidden !important;
+    }
+    .chat-header {
+      background: var(--card);
+      padding: 0 20px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .chat-header-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .chat-avatar {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #0D9488, #0F766E);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(13,148,136,0.3);
+    }
+    .chat-avatar svg { width: 22px; height: 22px; fill: #fff; }
+    .chat-header-info h3 { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.1px; }
+    .chat-header-info .online { font-size: 11px; color: var(--primary); display: flex; align-items: center; gap: 4px; font-weight: 500; }
+    .online-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .profile-switcher {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .profile-switcher::-webkit-scrollbar { display: none; }
+    .profile-chip {
+      padding: 6px 14px;
+      background: var(--bg);
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      white-space: nowrap;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .profile-chip.active {
+      background: var(--primary-50);
+      color: var(--primary-dark);
+      border-color: var(--primary);
+      font-weight: 600;
+    }
+
+    .chat-body {
+      flex: 1;
+      min-height: 0;
+      padding: 16px 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      scrollbar-width: none;
+    }
+    .chat-body::-webkit-scrollbar { display: none; }
+    .chat-msg {
+      max-width: 82%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .chat-msg.bot {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      align-self: flex-start;
+      border-bottom-left-radius: 6px;
+      box-shadow: var(--shadow-sm);
+    }
+    .chat-msg.user {
+      background: linear-gradient(135deg, #0D9488, #0F766E);
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 6px;
+      box-shadow: 0 2px 8px rgba(13,148,136,0.3);
+    }
+    .chat-time {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 6px 0;
+      font-weight: 500;
+    }
+
+    .chat-input-bar {
+      padding: 12px 20px 20px;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .chat-input {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      color: var(--text-primary);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .chat-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(13,148,136,0.1);
+    }
+    .chat-input::placeholder { color: var(--text-muted); }
+    .chat-send {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #0D9488, #0F766E);
+      border: none;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(13,148,136,0.3);
+      transition: transform 0.15s;
+    }
+    .chat-send:active { transform: scale(0.92); }
+    .chat-send svg { width: 18px; height: 18px; fill: #fff; }
+
+    .bottom-nav {
+      display: flex;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      padding: 8px 0 14px;
+      flex-shrink: 0;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      padding: 4px 0;
+      transition: all 0.2s;
+    }
+    .nav-item svg { width: 22px; height: 22px; fill: var(--text-muted); transition: fill 0.2s; }
+    .nav-item span { font-size: 10px; color: var(--text-muted); font-weight: 500; transition: color 0.2s; }
+    .nav-item.active svg { fill: var(--primary); }
+    .nav-item.active span { color: var(--primary); font-weight: 600; }
+
+    .nav-dots {
+      display: flex;
+      gap: 8px;
+      margin-top: 24px;
+    }
+    .nav-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .nav-dot.active {
+      background: var(--primary-light);
+      transform: scale(1.3);
+      box-shadow: 0 0 10px rgba(20,184,166,0.4);
+    }
+
+    .nav-labels {
+      display: flex;
+      gap: 18px;
+      margin-top: 14px;
+    }
+    .nav-label {
+      color: rgba(255,255,255,0.2);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .nav-label.active { color: var(--primary-light); }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15,23,42,0.92);
+      backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      border-radius: 34px;
+      padding: 30px;
+    }
+    .loading-overlay.active { display: flex; }
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(255,255,255,0.08);
+      border-top-color: var(--primary-light);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 18px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: #fff; font-size: 15px; font-weight: 600; text-align: center; letter-spacing: -0.1px; }
+    .loading-sub { color: rgba(255,255,255,0.45); font-size: 12px; margin-top: 4px; text-align: center; }
+    .loading-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 18px;
+      width: 100%;
+      max-width: 240px;
+    }
+    .loading-step .step-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .loading-step .step-dot.active { background: var(--primary-light); box-shadow: 0 0 8px rgba(20,184,166,0.5); }
+    .loading-step .step-dot.done { background: #5EEAD4; }
+    .loading-step .step-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.3);
+      transition: color 0.3s;
+      font-weight: 400;
+    }
+    .loading-step .step-label.active { color: #fff; font-weight: 500; }
+    .loading-step .step-label.done { color: rgba(255,255,255,0.5); }
+
+    .api-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .api-modal-overlay.active { display: flex; }
+    .api-modal {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 30px 24px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+    }
+    .api-modal h3 { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; letter-spacing: -0.2px; }
+    .api-modal p { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }
+    .api-modal input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+    }
+    .api-modal input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(13,148,136,0.1);
+    }
+    .api-modal-actions { display: flex; gap: 10px; }
+    .api-modal-btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .api-modal-btn:active { transform: scale(0.97); }
+    .api-modal-btn.primary {
+      background: linear-gradient(135deg, #0D9488, #0F766E);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(13,148,136,0.25);
+    }
+    .api-modal-btn.secondary { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
+
+    .typing-indicator { padding: 12px 20px !important; }
+    .typing-dots { display: flex; gap: 4px; align-items: center; }
+    .typing-dots span {
+      width: 7px; height: 7px; background: var(--text-muted); border-radius: 50%;
+      animation: typingBounce 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* ============ KEYFRAME ANIMATIONS ============ */
+    @keyframes splashLogoIn {
+      0% { opacity: 0; transform: scale(0.4) rotate(-10deg); }
+      100% { opacity: 1; transform: scale(1) rotate(0); }
+    }
+    @keyframes splashPulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(255,255,255,0.3)); }
+      50% { transform: scale(1.06); filter: drop-shadow(0 0 18px rgba(255,255,255,0.5)); }
+    }
+    @keyframes splashFadeUp {
+      0% { opacity: 0; transform: translateY(24px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes splashFloat {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(15px, -20px); }
+    }
+
+    @keyframes screenSlideIn {
+      0% { opacity: 0; transform: translateX(30px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes screenSlideBack {
+      0% { opacity: 0; transform: translateX(-30px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+    .screen.active { animation: screenSlideIn 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+    .screen.slide-back.active { animation: screenSlideBack 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+
+    @keyframes cardPop {
+      0% { opacity: 0; transform: translateY(18px) scale(0.95); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .feature-card {
+      animation: cardPop 0.45s ease-out both;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:active { transform: scale(0.96); }
+    .feature-card:nth-child(1) { animation-delay: 0.05s; }
+    .feature-card:nth-child(2) { animation-delay: 0.1s; }
+    .feature-card:nth-child(3) { animation-delay: 0.15s; }
+    .feature-card:nth-child(4) { animation-delay: 0.2s; }
+
+    @keyframes bubbleIn {
+      0% { opacity: 0; transform: translateY(12px) scale(0.92); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .chat-bubble {
+      animation: bubbleIn 0.3s ease-out both;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(16px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulseRing {
+      0% { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+
+    @keyframes navPop {
+      0% { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .nav-dot {
+      animation: navPop 0.3s ease-out both;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .nav-dot:active { transform: scale(0.85); }
+    .nav-dot:nth-child(1) { animation-delay: 0.1s; }
+    .nav-dot:nth-child(2) { animation-delay: 0.15s; }
+    .nav-dot:nth-child(3) { animation-delay: 0.2s; }
+    .nav-dot:nth-child(4) { animation-delay: 0.25s; }
+    .nav-dot:nth-child(5) { animation-delay: 0.3s; }
+
+    .bottom-nav { animation: fadeInUp 0.4s 0.2s ease-out both; }
+
+    @keyframes toastSlideIn {
+      0% { transform: translateX(-50%) translateY(20px); opacity: 0; }
+      100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+    .toast.show { animation: toastSlideIn 0.3s ease-out both; }
+  </style>
+</head>
+<body>
+
+  <p class="preview-title">Aegis - Mobile App Preview</p>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen">
+
+      <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Analyzing Prescription...</div>
+        <div class="loading-sub" id="loadingSub">Preparing to scan</div>
+        <div class="loading-step" id="step1">
+          <div class="step-dot" id="step1dot"></div>
+          <span class="step-label" id="step1label">Capturing image</span>
+        </div>
+        <div class="loading-step" id="step2">
+          <div class="step-dot" id="step2dot"></div>
+          <span class="step-label" id="step2label">Extracting text (OCR)</span>
+        </div>
+        <div class="loading-step" id="step3">
+          <div class="step-dot" id="step3dot"></div>
+          <span class="step-label" id="step3label">Analyzing prescription</span>
+        </div>
+      </div>
+
+      <!-- Splash -->
+      <div class="screen splash-screen active" id="screen-splash">
+        <div class="status-bar">
+          <span class="time">9:41</span>
+          <div class="status-icons">
+            <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 00-6 0zm-4-4l2 2a7.074 7.074 0 0110 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+          </div>
+        </div>
+        <div class="splash-logo">
+          <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+        </div>
+        <h1>Aegis</h1>
+        <p>Your trusted second opinion for prescriptions. Scan, understand, and manage your medications with confidence.</p>
+        <button class="splash-btn splash-btn-primary" onclick="showScreen('screen-home')">Get Started</button>
+        <button class="splash-btn splash-btn-secondary">I already have an account</button>
+      </div>
+
+      <!-- Home -->
+      <div class="screen" id="screen-home">
+        <div class="home-header">
+          <div class="status-bar">
+            <span class="time">9:41</span>
+            <div class="status-icons">
+              <svg viewBox="0 0 24 24" fill="#fff"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 00-6 0zm-4-4l2 2a7.074 7.074 0 0110 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+              <svg viewBox="0 0 24 24" fill="#fff"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+          </div>
+          <div class="greeting">Good morning</div>
+          <div class="name">Sarah Johnson</div>
+          <div class="search-bar">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <span>Search medicines, conditions...</span>
+          </div>
+        </div>
+        <div class="home-body">
+          <div class="section-title">Quick Actions</div>
+          <div class="feature-grid">
+            <div class="feature-card" onclick="showScreen('screen-scanner')">
+              <div class="feature-icon green">
+                <svg viewBox="0 0 24 24"><path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zM16 13h1.5v1.5H16V13zm-3 3h1.5v1.5H13V16zm1.5 1.5H16V19h-1.5v-1.5zM16 16h1.5v1.5H16V16zm1.5-1.5H19V16h-1.5v-1.5zm0 3H19V19h-1.5v-1.5z"/></svg>
+              </div>
+              <h3>Smart Scan</h3>
+              <p>Auto-detect & decode</p>
+            </div>
+            <div class="feature-card" onclick="showScreen('screen-result')">
+              <div class="feature-icon blue">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              </div>
+              <h3>Allergy Check</h3>
+              <p>Smart flagging</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon orange">
+                <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+              </div>
+              <h3>Schedule</h3>
+              <p>Set reminders</p>
+            </div>
+            <div class="feature-card" onclick="showScreen('screen-chat')">
+              <div class="feature-icon red">
+                <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+              </div>
+              <h3>Consult</h3>
+              <p>Private chat</p>
+            </div>
+          </div>
+
+          <div class="section-title">Today's Medications</div>
+          <div id="homeSchedule">
+          <div class="today-card">
+            <div class="label">Morning - 8:00 AM</div>
+            <div class="med-row">
+              <div class="med-dot green"></div>
+              <div class="med-info">
+                <div class="med-name">Metformin 500mg</div>
+                <div class="med-time">1 tablet with breakfast</div>
+              </div>
+              <div class="med-check done">
+                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              </div>
+            </div>
+            <div class="med-row">
+              <div class="med-dot blue"></div>
+              <div class="med-info">
+                <div class="med-name">Lisinopril 10mg</div>
+                <div class="med-time">1 tablet after food</div>
+              </div>
+              <div class="med-check"></div>
+            </div>
+          </div>
+          <div class="today-card">
+            <div class="label">Afternoon - 2:00 PM</div>
+            <div class="med-row">
+              <div class="med-dot orange"></div>
+              <div class="med-info">
+                <div class="med-name">Atorvastatin 20mg</div>
+                <div class="med-time">1 tablet after lunch</div>
+              </div>
+              <div class="med-check"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-item active">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            <span>Home</span>
+          </div>
+          <div class="nav-item" onclick="showScreen('screen-scanner')">
+            <svg viewBox="0 0 24 24"><path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zM16 13h1.5v1.5H16V13zm-3 3h1.5v1.5H13V16zm1.5 1.5H16V19h-1.5v-1.5zM16 16h1.5v1.5H16V16zm1.5-1.5H19V16h-1.5v-1.5zm0 3H19V19h-1.5v-1.5z"/></svg>
+            <span>Scan</span>
+          </div>
+          <div class="nav-item">
+            <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+            <span>Schedule</span>
+          </div>
+          <div class="nav-item" onclick="showScreen('screen-chat')">
+            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+            <span>Consult</span>
+          </div>
+        </div>
+      </div>
+
+      </div>
+
+      <!-- Scanner -->
+      <div class="screen scanner-screen" id="screen-scanner">
+        <div class="status-bar">
+          <span class="time">9:41</span>
+          <div class="status-icons">
+            <svg viewBox="0 0 24 24" fill="#fff"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 00-6 0zm-4-4l2 2a7.074 7.074 0 0110 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+            <svg viewBox="0 0 24 24" fill="#fff"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+          </div>
+        </div>
+        <div class="scanner-header">
+          <h2 id="scannerTitle">Scan Medicine Strip</h2>
+          <div class="scanner-close" onclick="pendingGalleryFiles=[];stopCamera();showScreen('screen-home')">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </div>
+        </div>
+        <div class="scan-mode-toggle">
+          <button class="scan-mode-btn active" id="modeStrip" onclick="switchScanMode('strip')">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
+            Medicine Strip
+          </button>
+          <button class="scan-mode-btn" id="modeRx" onclick="switchScanMode('rx')">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg>
+            Prescription
+          </button>
+        </div>
+        <div class="strip-preview-bar" id="stripPreviewBar"></div>
+        <div class="scanner-viewport" id="scannerViewport">
+          <video id="cameraFeed" autoplay playsinline></video>
+          <canvas id="captureCanvas"></canvas>
+          <canvas id="autoScanCanvas" style="display:none;"></canvas>
+          <img id="capturedImage" alt="Captured prescription" />
+          <div class="scan-frame" id="scanFrame">
+            <div class="scan-line" id="scanLine"></div>
+            <div class="scan-corners"><span></span></div>
+          </div>
+          <div class="camera-error" id="cameraError">
+            <svg viewBox="0 0 24 24"><path d="M18 10.48V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4.48l4 3.98v-11l-4 3.98zm-2-.79V18H4V6h12v3.69zM10 8H8v2h2V8zm0 3h-2v2h2v-2zm0 3H8v2h2v-2zm4-6h-2v2h2V8zm0 3h-2v2h2v-2zm0 3h-2v2h2v-2z"/></svg>
+            <h3>Camera Unavailable</h3>
+            <p>Allow camera access or use the Gallery button to upload a prescription image.</p>
+          </div>
+        </div>
+        <div class="scanner-hint" id="scannerHint">Align the medicine strip within the frame</div>
+        <button class="done-strips-btn" id="doneStripsBtn" onclick="switchScanMode('rx')">
+          <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          Done Scanning Strips — Scan Prescription
+        </button>
+        <div class="scanner-bottom">
+          <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
+          <button class="scan-btn scan-btn-secondary" onclick="document.getElementById('fileInput').click()">
+            <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+            Gallery
+          </button>
+          <button class="scan-btn scan-btn-primary" id="scanBtn" onclick="captureAndProcess()">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            Capture
+          </button>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div class="screen result-screen" id="screen-result">
+        <div class="status-bar">
+          <span class="time">9:41</span>
+          <div class="status-icons">
+            <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 00-6 0zm-4-4l2 2a7.074 7.074 0 0110 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+          </div>
+        </div>
+        <div class="result-header">
+          <div class="back-btn" onclick="resetScanState(); showScreen('screen-scanner')">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          </div>
+          <h2 id="resultTitle">Scan Results</h2>
+        </div>
+        <div class="result-body" id="resultBody">
+          <p style="text-align:center;color:#999;padding:40px 0;">Scan a prescription to see results here.</p>
+        </div>
+      </div>
+
+      <!-- Review -->
+      <div class="screen review-screen" id="screen-review">
+        <div class="status-bar">
+          <span class="time">9:41</span>
+          <div class="status-icons">
+            <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 00-6 0zm-4-4l2 2a7.074 7.074 0 0110 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+          </div>
+        </div>
+        <div class="review-header">
+          <div class="back-btn" onclick="showScreen('screen-scanner')">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          </div>
+          <h2 id="reviewTitle">Review Extracted Data</h2>
+        </div>
+        <div class="review-body" id="reviewBody">
+        </div>
+        <div class="review-actions">
+          <button class="review-btn review-btn-retake" onclick="pendingGalleryFiles=[];showScreen('screen-scanner')">
+            <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+            Retake
+          </button>
+          <button class="review-btn review-btn-confirm" id="reviewConfirmBtn" onclick="confirmReview()">
+            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Confirm
+          </button>
+        </div>
+      </div>
+
+      <!-- Schedule Review -->
+      <div class="screen schedule-screen" id="screen-schedule">
+        <div class="status-bar">
+          <span class="time">9:41</span>
+          <div class="status-icons">
+            <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 00-6 0zm-4-4l2 2a7.074 7.074 0 0110 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+          </div>
+        </div>
+        <div class="schedule-header">
+          <div class="back-btn" onclick="showScreen('screen-result')">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          </div>
+          <h2>Review Schedule</h2>
+        </div>
+        <div class="schedule-body" id="scheduleBody">
+        </div>
+        <div class="schedule-phone-section">
+          <div class="schedule-phone-label">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:#0D9488;margin-right:6px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            WhatsApp Reminders
+          </div>
+          <p class="schedule-phone-desc">Enter your WhatsApp number to receive daily medication reminders</p>
+          <input type="tel" id="schedulePhoneInput" class="schedule-phone-input" placeholder="+91 98765 43210" />
+        </div>
+        <div class="schedule-actions">
+          <button class="schedule-btn schedule-btn-back" onclick="showScreen('screen-result')">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            Back
+          </button>
+          <button class="schedule-btn schedule-btn-confirm" onclick="confirmSchedule()">
+            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            Confirm Schedule
+          </button>
+        </div>
+      </div>
+
+      <div class="schedule-toast" id="scheduleToast">Schedule saved!</div>
+
+      <!-- Schedule Confirmation -->
+      <div class="screen" id="screen-schedule-confirm">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px 24px;text-align:center;background:var(--bg);">
+          <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#10B981,#059669);display:flex;align-items:center;justify-content:center;margin-bottom:24px;box-shadow:0 8px 24px rgba(16,185,129,0.3);">
+            <svg viewBox="0 0 24 24" style="width:40px;height:40px;fill:#fff;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          </div>
+          <h1 style="font-size:24px;font-weight:800;color:var(--text-primary);margin:0 0 12px;">Schedule Set!</h1>
+          <p style="font-size:15px;color:var(--text-secondary);margin:0 0 32px;max-width:260px;line-height:1.5;">Look out for reminders :></p>
+          <button onclick="showScreen('screen-home')" style="background:var(--primary);color:#fff;border:none;border-radius:14px;padding:14px 40px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-md);">Back to Home</button>
+        </div>
+      </div>
+
+      <!-- Chat -->
+      <div class="screen chat-screen" id="screen-chat">
+        <div class="chat-header">
+          <div class="status-bar">
+            <span class="time">9:41</span>
+            <div class="status-icons">
+              <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 00-6 0zm-4-4l2 2a7.074 7.074 0 0110 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+          </div>
+          <div class="chat-header-row">
+            <div class="back-btn" onclick="showScreen('screen-home')">
+              <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </div>
+            <div class="chat-avatar">
+              <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+            </div>
+            <div class="chat-header-info">
+              <h3>Aegis</h3>
+              <div class="online"><span class="online-dot"></span> Available 24/7</div>
+            </div>
+          </div>
+          <div class="profile-switcher">
+            <div class="profile-chip active">Me</div>
+            <div class="profile-chip">Mom (Eleanor)</div>
+            <div class="profile-chip">Dad (Robert)</div>
+            <div class="profile-chip">Max (Dog)</div>
+          </div>
+        </div>
+        <div class="chat-body" id="chatBody">
+          <div class="chat-time">Today</div>
+          <div class="chat-msg bot">
+            Hello! I'm <strong>Aegis</strong>, your personal health assistant. I can help you with medication questions, side effects, drug interactions, and general health advice.
+            <br><br>How can I help you today?
+          </div>
+        </div>
+        <div class="chat-input-bar">
+          <input class="chat-input" id="chatInput" type="text" placeholder="Type your health question..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendChatMessage();}" />
+          <button class="chat-send" type="button" onclick="sendChatMessage()">
+            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="nav-dots">
+    <div class="nav-dot active" onclick="showScreen('screen-splash')"></div>
+    <div class="nav-dot" onclick="showScreen('screen-home')"></div>
+    <div class="nav-dot" onclick="showScreen('screen-scanner')"></div>
+    <div class="nav-dot" onclick="showScreen('screen-result')"></div>
+    <div class="nav-dot" onclick="showScreen('screen-chat')"></div>
+  </div>
+  <div class="nav-labels">
+    <span class="nav-label active" onclick="showScreen('screen-splash')">Splash</span>
+    <span class="nav-label" onclick="showScreen('screen-home')">Home</span>
+    <span class="nav-label" onclick="showScreen('screen-scanner')">Scanner</span>
+    <span class="nav-label" onclick="showScreen('screen-result')">Results</span>
+    <span class="nav-label" onclick="showScreen('screen-chat')">Consult</span>
+  </div>
+
+
+
+  <script>
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const AI_MODEL = 'gemini-3.6-flash';
+
+    async function callGemini(apiKey, systemPrompt, contents, temperature) {
+      const response = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/' + AI_MODEL + ':generateContent?key=' + apiKey,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents: contents,
+            generationConfig: { temperature: temperature }
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        throw new Error('API error ' + response.status + ': ' + errBody);
+      }
+
+      const data = await response.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      return parts.map(p => p.text || '').join('');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+
+    let cameraStream = null;
+    let scanMode = 'strip';
+    let scannedMeds = [];
+    let pendingReviewData = null;
+    let pendingReviewType = null;
+    let pendingReviewImage = null;
+    let pendingGalleryFiles = [];
+
+    // ===================== AUTO-SCAN (alignment detection) =====================
+    const AUTO_SCAN_INTERVAL_MS = 350;
+    const AUTO_SCAN_STABLE_HITS_NEEDED = 4;
+    const AUTO_SCAN_DETAIL_THRESHOLD = 18;
+    const AUTO_SCAN_MOTION_THRESHOLD = 6;
+    const AUTO_SCAN_BRIGHTNESS_MIN = 25;
+    const AUTO_SCAN_BRIGHTNESS_MAX = 235;
+    const AUTO_SCAN_STUCK_HINT_MS = 8000;
+    const AUTO_SCAN_SAMPLE_W = 64;
+    const AUTO_SCAN_SAMPLE_H = 40;
+
+    let autoScanTimer = null;
+    let autoScanToken = 0;
+    let autoScanState = 'idle'; // idle | searching | locked | capturing
+    let autoScanStableHits = 0;
+    let autoScanPrevGray = null;
+    let autoScanStartedAt = 0;
+
+    function defaultScannerHint() {
+      return scanMode === 'strip'
+        ? 'Align the medicine strip within the frame'
+        : 'Align the prescription within the frame';
+    }
+
+    function startAutoScan() {
+      stopAutoScan();
+      autoScanState = 'searching';
+      autoScanStableHits = 0;
+      autoScanPrevGray = null;
+      autoScanStartedAt = Date.now();
+      autoScanTimer = setInterval(autoScanTick, AUTO_SCAN_INTERVAL_MS);
+    }
+
+    function stopAutoScan() {
+      if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
+      autoScanToken++;
+      autoScanState = 'idle';
+      autoScanStableHits = 0;
+      autoScanPrevGray = null;
+      const scanFrame = document.getElementById('scanFrame');
+      const scanLine = document.getElementById('scanLine');
+      if (scanFrame) scanFrame.classList.remove('locked');
+      if (scanLine) scanLine.classList.remove('sweeping');
+      const hint = document.getElementById('scannerHint');
+      if (hint) hint.textContent = defaultScannerHint();
+    }
+
+    function getAutoScanRoi(video, viewport) {
+      const boxAR = viewport.clientWidth / viewport.clientHeight;
+      const vidAR = video.videoWidth / video.videoHeight;
+      let visW, visH;
+      if (vidAR > boxAR) { visH = video.videoHeight; visW = visH * boxAR; }
+      else { visW = video.videoWidth; visH = visW / boxAR; }
+      const cropX = (video.videoWidth - visW) / 2;
+      const cropY = (video.videoHeight - visH) / 2;
+      return {
+        x: cropX + visW * 0.10,
+        y: cropY + visH * 0.25,
+        w: visW * 0.80,
+        h: visH * 0.50
+      };
+    }
+
+    function autoScanTick() {
+      if (autoScanState !== 'searching') return;
+      const video = document.getElementById('cameraFeed');
+      const viewport = document.getElementById('scannerViewport');
+      if (!cameraStream || !video.videoWidth || !video.videoHeight) return;
+
+      const canvas = document.getElementById('autoScanCanvas');
+      canvas.width = AUTO_SCAN_SAMPLE_W;
+      canvas.height = AUTO_SCAN_SAMPLE_H;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      const roi = getAutoScanRoi(video, viewport);
+      ctx.drawImage(video, roi.x, roi.y, roi.w, roi.h, 0, 0, AUTO_SCAN_SAMPLE_W, AUTO_SCAN_SAMPLE_H);
+
+      const pixels = ctx.getImageData(0, 0, AUTO_SCAN_SAMPLE_W, AUTO_SCAN_SAMPLE_H).data;
+      const n = AUTO_SCAN_SAMPLE_W * AUTO_SCAN_SAMPLE_H;
+      const gray = new Float32Array(n);
+      let sum = 0;
+      for (let i = 0, p = 0; i < pixels.length; i += 4, p++) {
+        const g = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114;
+        gray[p] = g;
+        sum += g;
+      }
+      const mean = sum / n;
+      let variance = 0;
+      for (let p = 0; p < n; p++) variance += (gray[p] - mean) * (gray[p] - mean);
+      variance /= n;
+      const detail = Math.sqrt(variance);
+
+      let motion = Infinity;
+      if (autoScanPrevGray) {
+        let diff = 0;
+        for (let p = 0; p < n; p++) diff += Math.abs(gray[p] - autoScanPrevGray[p]);
+        motion = diff / n;
+      }
+      autoScanPrevGray = gray;
+
+      const brightnessOk = mean >= AUTO_SCAN_BRIGHTNESS_MIN && mean <= AUTO_SCAN_BRIGHTNESS_MAX;
+      const passes = brightnessOk && detail >= AUTO_SCAN_DETAIL_THRESHOLD && motion <= AUTO_SCAN_MOTION_THRESHOLD;
+
+      autoScanStableHits = passes ? autoScanStableHits + 1 : Math.max(0, autoScanStableHits - 1);
+
+      const hint = document.getElementById('scannerHint');
+      if (hint) {
+        if (autoScanStableHits > 0) {
+          hint.textContent = 'Hold steady…';
+        } else if (Date.now() - autoScanStartedAt > AUTO_SCAN_STUCK_HINT_MS) {
+          hint.textContent = 'Having trouble? Tap Capture to take the photo manually';
+        } else {
+          hint.textContent = defaultScannerHint();
+        }
+      }
+
+      if (autoScanStableHits >= AUTO_SCAN_STABLE_HITS_NEEDED) {
+        enterAutoScanLocked();
+      }
+    }
+
+    function enterAutoScanLocked() {
+      autoScanState = 'locked';
+      if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
+      const myToken = autoScanToken;
+      const scanFrame = document.getElementById('scanFrame');
+      const scanLine = document.getElementById('scanLine');
+      const hint = document.getElementById('scannerHint');
+      if (hint) hint.textContent = 'Scanning…';
+      if (scanFrame) scanFrame.classList.add('locked');
+      if (scanLine) {
+        scanLine.classList.add('sweeping');
+        scanLine.addEventListener('animationend', function onSweepDone() {
+          scanLine.removeEventListener('animationend', onSweepDone);
+          if (myToken !== autoScanToken) return;
+          autoScanState = 'capturing';
+          scanFrame.classList.remove('locked');
+          scanLine.classList.remove('sweeping');
+          captureAndProcess();
+        }, { once: true });
+      }
+    }
+
+    function getApiKey() {
+      return window.AEGIS_API_KEY || '';
+    }
+
+    const screenOrder = ['screen-splash','screen-home','screen-scanner','screen-result','screen-review','screen-schedule','screen-schedule-confirm','screen-chat'];
+    let currentScreenIdx = 0;
+
+    function showScreen(id) {
+      const prevIdx = currentScreenIdx;
+      document.querySelectorAll('.screen').forEach(s => {
+        s.classList.remove('active','slide-back');
+      });
+      const el = document.getElementById(id);
+      const idx = screenOrder.indexOf(id);
+      if (idx < prevIdx) { el.classList.add('slide-back'); }
+      currentScreenIdx = idx;
+      el.classList.add('active');
+
+      document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+      document.querySelectorAll('.nav-label').forEach((l, i) => l.classList.toggle('active', i === idx));
+
+      if (id === 'screen-home') {
+        el.querySelectorAll('.feature-card').forEach((c, i) => {
+          c.style.animation = 'none'; c.offsetHeight;
+          c.style.animation = `cardPop 0.45s ${0.05 + i * 0.05}s ease-out both`;
+        });
+      }
+      if (id === 'screen-chat') {
+        const body = document.getElementById('chatBody');
+        if (body) body.scrollTop = body.scrollHeight;
+      }
+      if (id === 'screen-scanner') { startCamera(); }
+      else { stopCamera(); }
+    }
+
+    function switchScanMode(mode) {
+      scanMode = mode;
+      document.getElementById('modeStrip').classList.toggle('active', mode === 'strip');
+      document.getElementById('modeRx').classList.toggle('active', mode === 'rx');
+      const title = document.getElementById('scannerTitle');
+      const hint = document.getElementById('scannerHint');
+      const doneBtn = document.getElementById('doneStripsBtn');
+      const stripBar = document.getElementById('stripPreviewBar');
+      if (mode === 'strip') {
+        title.textContent = 'Scan Medicine Strip';
+        hint.textContent = 'Align the medicine strip within the frame';
+        doneBtn.classList.toggle('visible', scannedMeds.length > 0);
+        stripBar.classList.toggle('visible', scannedMeds.length > 0);
+      } else {
+        title.textContent = 'Scan Prescription';
+        hint.textContent = 'Align the prescription within the frame';
+        doneBtn.classList.remove('visible');
+        stripBar.classList.remove('visible');
+      }
+      resetScanner();
+      startAutoScan();
+    }
+
+    function resetScanner() {
+      const video = document.getElementById('cameraFeed');
+      const capturedImg = document.getElementById('capturedImage');
+      const scanFrame = document.getElementById('scanFrame');
+      const scanLine = document.getElementById('scanLine');
+      capturedImg.style.display = 'none';
+      video.style.display = 'block';
+      if (cameraStream) {
+        scanFrame.style.display = 'block';
+        scanLine.style.display = 'block';
+      }
+    }
+
+    function updateStripPreview() {
+      const bar = document.getElementById('stripPreviewBar');
+      bar.innerHTML = scannedMeds.map(m =>
+        '<img class="strip-thumb" src="' + m.thumbnail + '" alt="strip" />'
+      ).join('');
+      bar.classList.toggle('visible', scannedMeds.length > 0 && scanMode === 'strip');
+      document.getElementById('doneStripsBtn').classList.toggle('visible', scannedMeds.length > 0 && scanMode === 'strip');
+    }
+
+    async function startCamera() {
+      const video = document.getElementById('cameraFeed');
+      const errDiv = document.getElementById('cameraError');
+      const capturedImg = document.getElementById('capturedImage');
+      const scanFrame = document.getElementById('scanFrame');
+      const scanLine = document.getElementById('scanLine');
+
+      capturedImg.style.display = 'none';
+      video.style.display = 'block';
+      scanFrame.style.display = 'block';
+      scanLine.style.display = 'block';
+      errDiv.classList.remove('visible');
+
+      if (cameraStream) { startAutoScan(); return; }
+
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        video.srcObject = cameraStream;
+        if (video.videoWidth) {
+          startAutoScan();
+        } else {
+          video.addEventListener('loadedmetadata', () => startAutoScan(), { once: true });
+        }
+      } catch (err) {
+        console.warn('Camera access denied:', err);
+        video.style.display = 'none';
+        scanFrame.style.display = 'none';
+        scanLine.style.display = 'none';
+        errDiv.classList.add('visible');
+      }
+    }
+
+    function stopCamera() {
+      stopAutoScan();
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+        cameraStream = null;
+      }
+      const video = document.getElementById('cameraFeed');
+      video.srcObject = null;
+    }
+
+    function setLoadStep(step, state) {
+      const dot = document.getElementById('step' + step + 'dot');
+      const label = document.getElementById('step' + step + 'label');
+      dot.className = 'step-dot ' + state;
+      label.className = 'step-label ' + state;
+    }
+
+    function showLoading() {
+      document.getElementById('loadingOverlay').classList.add('active');
+      setLoadStep(1, '');
+      setLoadStep(2, '');
+      setLoadStep(3, '');
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.remove('active');
+    }
+
+    function clamp(v) { return Math.max(0, Math.min(255, Math.round(v))); }
+
+    function captureImage() {
+      const video = document.getElementById('cameraFeed');
+      const canvas = document.getElementById('captureCanvas');
+      const capturedImg = document.getElementById('capturedImage');
+      const scanFrame = document.getElementById('scanFrame');
+      const scanLine = document.getElementById('scanLine');
+
+      if (video.srcObject && video.readyState >= 2) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+
+        // Preprocess: increase contrast & sharpen for better handwriting recognition
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = imageData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          // Increase contrast
+          d[i]     = clamp(((d[i]     - 128) * 1.4) + 128); // R
+          d[i + 1] = clamp(((d[i + 1] - 128) * 1.4) + 128); // G
+          d[i + 2] = clamp(((d[i + 2] - 128) * 1.4) + 128); // B
+        }
+        ctx.putImageData(imageData, 0, 0);
+
+        capturedImg.src = canvas.toDataURL('image/jpeg', 0.98);
+        capturedImg.style.display = 'block';
+        video.style.display = 'none';
+        scanFrame.style.display = 'none';
+        scanLine.style.display = 'none';
+        return canvas.toDataURL('image/jpeg', 0.98);
+      }
+      return null;
+    }
+
+    async function captureAndProcess() {
+      stopAutoScan();
+      const apiKey = getApiKey();
+      if (!apiKey) { alert('API key not configured. Set GEMINI_API_KEY in .env and restart server.'); return; }
+      const imageData = captureImage();
+      if (!imageData) {
+        alert('Could not capture image. Make sure your camera is active, or use Gallery to upload.');
+        return;
+      }
+      await processImage(imageData, apiKey);
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+      const apiKey = getApiKey();
+      if (!apiKey) { alert('API key not configured. Set GEMINI_API_KEY in .env and restart server.'); return; }
+
+      if (scanMode === 'strip' && files.length > 1) {
+        pendingGalleryFiles = files.slice(1);
+        processGalleryFile(files[0], apiKey);
+      } else if (scanMode === 'strip' && files.length === 1) {
+        pendingGalleryFiles = [];
+        processGalleryFile(files[0], apiKey);
+      } else {
+        pendingGalleryFiles = [];
+        processGalleryFile(files[0], apiKey);
+      }
+      e.target.value = '';
+    });
+
+    function processGalleryFile(file, apiKey) {
+      const reader = new FileReader();
+      reader.onload = async function(ev) {
+        const dataUrl = ev.target.result;
+        const capturedImg = document.getElementById('capturedImage');
+        const video = document.getElementById('cameraFeed');
+        const scanFrame = document.getElementById('scanFrame');
+        const scanLine = document.getElementById('scanLine');
+
+        capturedImg.src = dataUrl;
+        capturedImg.style.display = 'block';
+        video.style.display = 'none';
+        scanFrame.style.display = 'none';
+        scanLine.style.display = 'none';
+
+        await processImage(dataUrl, apiKey);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function processImage(imageDataUrl, apiKey) {
+      if (scanMode === 'strip') {
+        await processStrip(imageDataUrl, apiKey);
+      } else {
+        await processPrescription(imageDataUrl, apiKey);
+      }
+    }
+
+    async function processStrip(imageDataUrl, apiKey) {
+      showLoading();
+      setLoadStep(1, 'active');
+      document.getElementById('loadingText').textContent = 'Capturing strip...';
+      await sleep(400);
+      setLoadStep(1, 'done');
+
+      setLoadStep(2, 'active');
+      document.getElementById('loadingText').textContent = 'Preparing image...';
+      document.getElementById('loadingSub').textContent = 'Encoding image for analysis';
+      const base64Data = imageDataUrl.split(',')[1];
+      const mimeType = imageDataUrl.match(/data:(.*?);/)?.[1] || 'image/jpeg';
+      await sleep(400);
+      setLoadStep(2, 'done');
+
+      setLoadStep(3, 'active');
+      document.getElementById('loadingText').textContent = 'Identifying medicine...';
+      document.getElementById('loadingSub').textContent = 'Reading medicine strip';
+
+      let stripResult;
+      try {
+        const systemPrompt = `You are a medicine identification expert. Given an image of a medicine strip/packaging, identify the medicine and extract ALL available details.
+
+Return a JSON object with this exact structure (no markdown, no code fences, just raw JSON):
+{
+  "name": "generic/brand medicine name",
+  "type": "tablet/capsule/syrup/injection/ointment/drops",
+  "dosage": "e.g. 500mg, 250mg/5ml",
+  "category": "antibiotic/analgesic/antihistamine/antidiabetic/cardiovascular/etc",
+  "purpose": "what this medicine treats in plain English",
+  "frequency": "typical usage frequency if known, e.g. 3 times daily, or null",
+  "duration": "typical course duration if known, e.g. 7 days, or null",
+  "withFood": true or false depending on whether it should be taken with food,
+  "instructions": "any special instructions visible on the strip or commonly known",
+  "manufacturer": "pharmaceutical company name if visible",
+  "sideEffects": ["list", "of", "common", "side effects"],
+  "disclaimers": ["list", "of", "medicine-specific", "precautions or warnings"],
+  "stripText": "all text you can read from the strip"
+}
+
+Rules:
+- Read ALL text visible on the strip packaging
+- Identify the medicine name, dosage, form, and category
+- Use your medical knowledge to fill in purpose, frequency, duration, withFood, and sideEffects
+- For disclaimers, give 2-5 short, medicine-SPECIFIC precautions (e.g. drowsiness/driving, pregnancy/breastfeeding, alcohol interaction, not for children under a certain age, kidney/liver caution, overdose risk) — never generic filler. Empty array only if truly nothing applies.
+- If you cannot determine a field, use null
+- Always include stripText with all readable text`;
+
+        const content = await callGemini(apiKey, systemPrompt, [
+          {
+            role: 'user',
+            parts: [
+              { text: 'Identify this medicine from its strip/packaging. Read all text on the strip.' },
+              { inline_data: { mime_type: mimeType, data: base64Data } }
+            ]
+          }
+        ], 0.2);
+
+        let jsonStr = content;
+        const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) { jsonStr = jsonMatch[1]; }
+        stripResult = JSON.parse(jsonStr.trim());
+      } catch (err) {
+        hideLoading();
+        alert('Analysis failed: ' + err.message);
+        return;
+      }
+
+      stripResult.thumbnail = imageDataUrl;
+
+      setLoadStep(3, 'done');
+      document.getElementById('loadingText').textContent = 'Medicine identified!';
+      document.getElementById('loadingSub').textContent = stripResult.name + (stripResult.dosage ? ' ' + stripResult.dosage : '');
+      await sleep(1200);
+      hideLoading();
+
+      showReview(stripResult, 'strip', imageDataUrl);
+    }
+
+    async function processPrescription(imageDataUrl, apiKey) {
+      showLoading();
+      setLoadStep(1, 'active');
+      document.getElementById('loadingText').textContent = 'Capturing prescription...';
+      await sleep(400);
+      setLoadStep(1, 'done');
+
+      setLoadStep(2, 'active');
+      document.getElementById('loadingText').textContent = 'Preparing image...';
+      const base64Data = imageDataUrl.split(',')[1];
+      const mimeType = imageDataUrl.match(/data:(.*?);/)?.[1] || 'image/jpeg';
+      await sleep(400);
+      setLoadStep(2, 'done');
+
+      setLoadStep(3, 'active');
+      document.getElementById('loadingText').textContent = 'Analyzing...';
+      document.getElementById('loadingSub').textContent = 'Analyzing prescription via Gemini Vision';
+
+      let aiResult;
+      try {
+        const systemPrompt = `You are an expert medical prescription analyzer with exceptional handwriting recognition skills. You MUST read and extract ALL text from this prescription image, including handwritten text. Even if the handwriting is messy, unclear, or difficult to read, you must make your best effort to interpret every word. DO NOT say the text is illegible — instead, provide your best interpretation of what you can see.
+
+Given the prescription image, extract a JSON object with this exact structure (no markdown, no code fences, just raw JSON):
+
+{
+  "medications": [
+    {
+      "name": "medicine name",
+      "type": "tablet/capsule/syrup/injection",
+      "category": "antibiotic/analgesic/antihistamine/etc",
+      "purpose": "what it treats in plain English",
+      "dosage": "e.g. 500mg",
+      "frequency": "e.g. 1-0-1, 0-1-0, 1-1-1, 3 times daily",
+      "duration": "e.g. 7 days, 5 days, 2 weeks",
+      "withFood": true,
+      "instructions": "any special instructions from the prescription",
+      "sideEffects": ["list", "of", "common", "side effects"]
+    }
+  ],
+  "alerts": [
+    {
+      "type": "allergy_warning/interaction_warning/dosage_concern",
+      "severity": "high/medium/low",
+      "title": "short alert title",
+      "description": "clear explanation"
+    }
+  ],
+  "rawText": "all text you can read from the prescription image",
+  "doctorName": "if readable, the prescribing doctor's name",
+  "patientName": "if readable, the patient's name"
+}
+
+CRITICAL RULES:
+- Every medication MUST include ALL fields: name, type, category, purpose, dosage, frequency, duration, withFood, instructions, sideEffects
+- NEVER omit any field — use null only if truly impossible to determine
+- For frequency, prefer the numeric slot format when possible: 1-0-1 (morning-evening), 0-1-0 (afternoon only), 1-1-1 (three times daily), 1-1-0 (morning-afternoon)
+- For sideEffects, always provide the most common side effects for the identified medicine using your medical knowledge
+- For withFood, use true if the medicine should be taken with food, false if on empty stomach
+- For duration, if not visible on the prescription, infer a typical course based on the medicine type
+- NEVER say text is illegible — always provide your best interpretation
+- Look carefully at the ENTIRE image and extract EVERY medicine listed
+- Always include the rawText field with all text you can read from the image
+- Make alerts only if there are genuine medical concerns; empty array is fine
+- Use plain English, no medical jargon without explanation`;
+
+        const userParts = [
+          { text: 'This is a handwritten prescription. Read EVERY line of text carefully, including all medicine names, dosages, and instructions. Decode the handwriting — do not skip anything.' },
+          { inline_data: { mime_type: mimeType, data: base64Data } }
+        ];
+
+        const content = await callGemini(apiKey, systemPrompt, [
+          { role: 'user', parts: userParts }
+        ], 0.3);
+
+        let jsonStr = content;
+        const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) { jsonStr = jsonMatch[1]; }
+        aiResult = JSON.parse(jsonStr.trim());
+      } catch (err) {
+        hideLoading();
+        alert('Analysis failed: ' + err.message);
+        return;
+      }
+
+      setLoadStep(3, 'done');
+      document.getElementById('loadingText').textContent = 'Complete!';
+      document.getElementById('loadingSub').textContent = '';
+      await sleep(600);
+      hideLoading();
+
+      showReview(aiResult, 'rx', null);
+    }
+
+    function renderResults(data) {
+      window._lastResultData = data;
+      const body = document.getElementById('resultBody');
+      let html = '';
+
+      // Alerts
+      if (data.alerts && data.alerts.length > 0) {
+        data.alerts.forEach(alert => {
+          const isHigh = alert.severity === 'high';
+          const cls = isHigh ? 'allergy-banner' : 'alert-banner';
+          const iconBg = isHigh ? '#EF4444' : '#F59E0B';
+          html += `
+            <div class="${cls}">
+              <div class="alert-icon" style="background:${iconBg}">
+                <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+              </div>
+              <div class="alert-text">
+                <h4>${escapeHtml(alert.title)}</h4>
+                <p>${escapeHtml(alert.description)}</p>
+              </div>
+            </div>`;
+        });
+      }
+
+      // Match summary
+      if (data.matches && data.matches.length > 0) {
+        const matchedCount = data.matches.filter(m => m.status === 'matched').length;
+        const partialCount = data.matches.filter(m => m.status === 'partial').length;
+        const noMatchCount = data.matches.filter(m => m.status === 'no_match').length;
+        html += `
+          <div style="background:linear-gradient(135deg,#0F172A,#1E293B);border-radius:var(--radius);padding:16px;margin-bottom:16px;color:#fff;">
+            <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Prescription vs Strips</div>
+            <div style="display:flex;gap:10px;">
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:12px;padding:10px;text-align:center;">
+                <div style="font-size:22px;font-weight:700;color:#34D399;">${matchedCount}</div>
+                <div style="font-size:11px;opacity:0.7;">Matched</div>
+              </div>
+              <div style="flex:1;background:rgba(245,158,11,0.2);border-radius:12px;padding:10px;text-align:center;">
+                <div style="font-size:22px;font-weight:700;color:#FBBF24;">${partialCount}</div>
+                <div style="font-size:11px;opacity:0.7;">Partial</div>
+              </div>
+              <div style="flex:1;background:rgba(239,68,68,0.2);border-radius:12px;padding:10px;text-align:center;">
+                <div style="font-size:22px;font-weight:700;color:#F87171;">${noMatchCount}</div>
+                <div style="font-size:11px;opacity:0.7;">No Strip</div>
+              </div>
+            </div>
+          </div>`;
+
+        data.matches.forEach(m => {
+          const statusColors = { matched: '#10B981', partial: '#F59E0B', no_match: '#EF4444' };
+          const statusLabels = { matched: 'Matched', partial: 'Partial Match', no_match: 'No Strip Found' };
+          const bg = { matched: '#ECFDF5', partial: '#FFFBEB', no_match: '#FEF2F2' };
+          const clr = statusColors[m.status] || '#999';
+          html += `
+            <div style="background:${bg[m.status] || '#f5f5f5'};border-left:4px solid ${clr};border-radius:0 12px 12px 0;padding:12px 14px;margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <div style="font-size:13px;font-weight:700;color:#333;">${escapeHtml(m.prescriptionMed)}</div>
+                <span style="font-size:10px;font-weight:700;color:${clr};background:${bg[m.status]};padding:2px 8px;border-radius:6px;">${statusLabels[m.status]}</span>
+              </div>
+              ${m.scannedMed ? '<div style="font-size:11px;color:#666;">Scanned: ' + escapeHtml(m.scannedMed) + '</div>' : ''}
+              ${m.note ? '<div style="font-size:11px;color:#888;margin-top:2px;">' + escapeHtml(m.note) + '</div>' : ''}
+            </div>`;
+        });
+      }
+
+      // Unscanned / Extra
+      if (data.unscannedMeds && data.unscannedMeds.length > 0) {
+        html += `
+          <div style="background:#FFFBEB;border-radius:14px;padding:12px 14px;margin-bottom:12px;">
+            <div style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:6px;">On prescription but not scanned:</div>
+            ${data.unscannedMeds.map(m => '<div style="font-size:12px;color:#A16207;padding:2px 0;">- ' + escapeHtml(m) + '</div>').join('')}
+          </div>`;
+      }
+      if (data.extraScans && data.extraScans.length > 0) {
+        html += `
+          <div style="background:#EFF6FF;border-radius:14px;padding:12px 14px;margin-bottom:12px;">
+            <div style="font-size:12px;font-weight:700;color:#1E40AF;margin-bottom:6px;">Scanned strips not on prescription:</div>
+            ${data.extraScans.map(m => '<div style="font-size:12px;color:#1D4ED8;padding:2px 0;">- ' + escapeHtml(m) + '</div>').join('')}
+          </div>`;
+      }
+
+      // Medications
+      if (data.medications && data.medications.length > 0) {
+        const pillColors = ['green', 'blue'];
+        data.medications.forEach((med, i) => {
+          const color = pillColors[i % pillColors.length];
+          html += `
+            <div class="medicine-card">
+              <div class="med-header">
+                <div class="med-pill ${color}">
+                  <svg viewBox="0 0 24 24"><path d="M4.22 11.29l5.07-5.07a4 4 0 015.66 0l1.41 1.41a4 4 0 010 5.66l-5.07 5.07a4 4 0 01-5.66 0L2.81 16.95a4 4 0 010-5.66l1.41-1.41z"/></svg>
+                </div>
+                <div>
+                  <div class="med-title">${escapeHtml(med.name)}</div>
+                  <div class="med-subtitle">${escapeHtml(med.type || '')}${med.category ? ' - ' + escapeHtml(med.category) : ''}</div>
+                </div>
+              </div>
+              ${med.purpose ? `<div class="med-purpose">${escapeHtml(med.purpose)}</div>` : ''}
+              ${med.dosage ? `<div class="detail-row"><span class="detail-label">Dosage</span><span class="detail-value">${escapeHtml(med.dosage)}</span></div>` : `<div class="detail-row"><span class="detail-label">Dosage</span><span class="detail-value" style="color:#999">Not specified</span></div>`}
+              ${med.frequency ? `<div class="detail-row"><span class="detail-label">Frequency</span><span class="detail-value">${escapeHtml(med.frequency)}</span></div>` : `<div class="detail-row"><span class="detail-label">Frequency</span><span class="detail-value" style="color:#999">Not specified</span></div>`}
+              ${med.duration ? `<div class="detail-row"><span class="detail-label">Duration</span><span class="detail-value">${escapeHtml(med.duration)}</span></div>` : `<div class="detail-row"><span class="detail-label">Duration</span><span class="detail-value" style="color:#999">Not specified</span></div>`}
+              ${med.withFood !== null && med.withFood !== undefined ? `<div class="detail-row"><span class="detail-label">With food?</span><span class="detail-value">${med.withFood ? 'Yes' : 'No'}</span></div>` : `<div class="detail-row"><span class="detail-label">With food?</span><span class="detail-value" style="color:#999">Not specified</span></div>`}
+              ${med.instructions ? `<div class="detail-row"><span class="detail-label">Instructions</span><span class="detail-value">${escapeHtml(med.instructions)}</span></div>` : `<div class="detail-row"><span class="detail-label">Instructions</span><span class="detail-value" style="color:#999">Not specified</span></div>`}
+              ${med.sideEffects && med.sideEffects.length > 0 ? `
+                <div class="side-effects">
+                  <h4>Possible Side Effects</h4>
+                  ${med.sideEffects.map(se => `<span class="side-effect-tag">${escapeHtml(se)}</span>`).join('')}
+                </div>` : `<div class="side-effects"><h4>Possible Side Effects</h4><span style="color:#999;font-size:12px;">Not specified</span></div>`}
+            </div>`;
+        });
+      }
+
+      // Raw text
+      if (data.rawText) {
+        html += `
+          <div class="raw-text-toggle" onclick="this.querySelector('pre').style.maxHeight = this.querySelector('pre').style.maxHeight === 'none' ? '80px' : 'none'">
+            <h4>
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:#999"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg>
+              Raw Text
+            </h4>
+            <pre>${escapeHtml(data.rawText)}</pre>
+          </div>`;
+      }
+
+      // Doctor / Patient info
+      if (data.doctorName || data.patientName) {
+        html += `<div style="background:#f5f5f5;border-radius:12px;padding:12px 16px;margin-bottom:12px;">`;
+        if (data.patientName) html += `<div style="font-size:12px;color:#666;margin-bottom:4px;"><strong>Patient:</strong> ${escapeHtml(data.patientName)}</div>`;
+        if (data.doctorName) html += `<div style="font-size:12px;color:#666;"><strong>Doctor:</strong> ${escapeHtml(data.doctorName)}</div>`;
+        html += `</div>`;
+      }
+
+      if (!html) {
+        html = `<p style="text-align:center;color:#999;padding:40px 0;">No prescription data could be parsed from this image.</p>`;
+      }
+
+      html += `
+        <button class="add-schedule-btn" onclick="generateSchedule()">
+          <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg>
+          Add All to Schedule
+        </button>`;
+
+      html += `
+        <button class="add-schedule-btn" style="background:linear-gradient(135deg,#2563EB,#1D4ED8);margin-top:8px;box-shadow:0 4px 12px rgba(37,99,235,0.25);" onclick="resetScanState(); showScreen('screen-scanner')">
+          <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          Scan Again
+        </button>`;
+
+      body.innerHTML = html;
+    }
+
+    function resetScanState() {
+      scannedMeds = [];
+      pendingGalleryFiles = [];
+      scanMode = 'strip';
+      document.getElementById('modeStrip').classList.add('active');
+      document.getElementById('modeRx').classList.remove('active');
+      document.getElementById('scannerTitle').textContent = 'Scan Medicine Strip';
+      document.getElementById('scannerHint').textContent = 'Align the medicine strip within the frame';
+      document.getElementById('doneStripsBtn').classList.remove('visible');
+      document.getElementById('stripPreviewBar').classList.remove('visible');
+      document.getElementById('stripPreviewBar').innerHTML = '';
+    }
+
+    function showReview(data, type, imageDataUrl) {
+      pendingReviewData = data;
+      pendingReviewType = type;
+      pendingReviewImage = imageDataUrl;
+      const body = document.getElementById('reviewBody');
+      const title = document.getElementById('reviewTitle');
+      let html = '';
+
+      if (type === 'strip') {
+        title.textContent = 'Review Medicine Strip';
+        html += '<div class="review-banner"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><div class="review-banner-text"><strong>Medicine Identified</strong>Please verify the extracted details below. Edit any field if needed.</div></div>';
+        if (imageDataUrl) html += '<img class="review-strip-thumb" src="' + imageDataUrl + '" alt="strip" />';
+
+        html += '<div class="review-card">';
+        html += '<div class="review-card-header"><div class="review-card-num">1</div><div class="review-card-title">Medicine Details</div></div>';
+        html += reviewField('name', 'Medicine Name', data.name || '');
+        html += '<div class="review-field-row">';
+        html += reviewField('dosage', 'Dosage', data.dosage || '');
+        html += reviewField('type', 'Form', data.type || '');
+        html += '</div>';
+        html += reviewField('manufacturer', 'Manufacturer', data.manufacturer || '');
+        html += '</div>';
+
+        if (data.category || data.purpose || data.frequency || data.duration || data.withFood != null || (data.sideEffects && data.sideEffects.length > 0)) {
+          html += '<div class="review-card">';
+          html += '<div class="review-card-header"><div class="review-card-num">2</div><div class="review-card-title">What It\'s For</div></div>';
+          if (data.category) html += '<div class="detail-row"><div class="detail-label">Category</div><div class="detail-value">' + escapeHtml(data.category) + '</div></div>';
+          if (data.purpose) html += '<div class="detail-row"><div class="detail-label">Purpose</div><div class="detail-value">' + escapeHtml(data.purpose) + '</div></div>';
+          if (data.frequency) html += '<div class="detail-row"><div class="detail-label">Typical Frequency</div><div class="detail-value">' + escapeHtml(data.frequency) + '</div></div>';
+          if (data.duration) html += '<div class="detail-row"><div class="detail-label">Typical Duration</div><div class="detail-value">' + escapeHtml(data.duration) + '</div></div>';
+          if (data.withFood != null) html += '<div class="detail-row"><div class="detail-label">Food</div><div class="detail-value">' + (data.withFood ? 'With food' : 'Empty stomach') + '</div></div>';
+          if (data.sideEffects && data.sideEffects.length > 0) {
+            html += '<div class="side-effects"><h4>Common Side Effects</h4>';
+            html += data.sideEffects.map(se => '<span class="side-effect-tag">' + escapeHtml(se) + '</span>').join('');
+            html += '</div>';
+          }
+          html += '</div>';
+        }
+
+        if (data.disclaimers && data.disclaimers.length > 0) {
+          html += '<div class="alert-banner">';
+          html += '<div class="alert-icon" style="background:#F59E0B"><svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div>';
+          html += '<div class="alert-text"><h4>Things to Know</h4><ul class="disclaimer-list">';
+          html += data.disclaimers.map(d => '<li>' + escapeHtml(d) + '</li>').join('');
+          html += '</ul><p class="disclaimer-footnote">AI-generated — verify with a pharmacist or doctor.</p></div>';
+          html += '</div>';
+        }
+      } else {
+        title.textContent = 'Review Prescription';
+        html += '<div class="review-banner"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg><div class="review-banner-text"><strong>Prescription Analyzed</strong>Please verify each extracted medicine. Edit any field if needed.</div></div>';
+
+        if (data.medications && data.medications.length > 0) {
+          data.medications.forEach((med, i) => {
+            html += '<div class="review-card">';
+            html += '<div class="review-card-header"><div class="review-card-num">' + (i + 1) + '</div><div class="review-card-title">Medicine ' + (i + 1) + '</div></div>';
+            html += reviewField('med_name_' + i, 'Medicine Name', med.name || '');
+            html += '<div class="review-field-row">';
+            html += reviewField('med_dosage_' + i, 'Dosage', med.dosage || '');
+            html += reviewField('med_type_' + i, 'Form', med.type || '');
+            html += '</div>';
+            html += reviewField('med_frequency_' + i, 'Frequency', med.frequency || '');
+            html += reviewField('med_duration_' + i, 'Duration', med.duration || '');
+            if (med.withFood != null) {
+              html += '<div class="food-badge' + (med.withFood ? '' : ' empty') + '" style="margin:-4px 0 12px;">' + (med.withFood ? '🍽️ With food' : '🕒 Empty stomach') + '</div>';
+            }
+            html += reviewField('med_purpose_' + i, 'Purpose', med.purpose || '');
+            html += reviewField('med_instructions_' + i, 'Instructions', med.instructions || '');
+            html += '</div>';
+          });
+        } else {
+          html += '<p style="text-align:center;color:#999;padding:20px 0;">No medicines were extracted. Tap Retake to scan again.</p>';
+        }
+
+        if (data.doctorName || data.patientName) {
+          html += '<div class="review-card">';
+          html += '<div class="review-card-header"><div class="review-card-title">Doctor / Patient Info</div></div>';
+          if (data.patientName) html += reviewField('patientName', 'Patient Name', data.patientName);
+          if (data.doctorName) html += reviewField('doctorName', 'Doctor Name', data.doctorName);
+          html += '</div>';
+        }
+      }
+
+      body.innerHTML = html;
+      showScreen('screen-review');
+    }
+
+    function reviewField(id, label, value) {
+      return '<div class="review-field"><label>' + label + '</label><input type="text" id="rev_' + id + '" value="' + escapeHtml(value).replace(/"/g, '&quot;') + '" /></div>';
+    }
+
+    function getReviewVal(id) {
+      const el = document.getElementById('rev_' + id);
+      return el ? el.value.trim() : '';
+    }
+
+    function confirmReview() {
+      if (pendingReviewType === 'strip') {
+        const reviewed = {
+          name: getReviewVal('name'),
+          dosage: getReviewVal('dosage'),
+          type: getReviewVal('type'),
+          category: pendingReviewData.category || null,
+          purpose: pendingReviewData.purpose || null,
+          frequency: pendingReviewData.frequency || null,
+          duration: pendingReviewData.duration || null,
+          withFood: pendingReviewData.withFood != null ? pendingReviewData.withFood : null,
+          instructions: pendingReviewData.instructions || null,
+          manufacturer: getReviewVal('manufacturer'),
+          sideEffects: pendingReviewData.sideEffects || [],
+          disclaimers: pendingReviewData.disclaimers || [],
+          thumbnail: pendingReviewImage
+        };
+        scannedMeds.push(reviewed);
+        updateStripPreview();
+
+        if (pendingGalleryFiles.length > 0) {
+          const nextFile = pendingGalleryFiles.shift();
+          const apiKey = getApiKey();
+          processGalleryFile(nextFile, apiKey);
+        } else {
+          resetScanner();
+          showScreen('screen-scanner');
+        }
+      } else {
+        const reviewed = { ...pendingReviewData };
+        reviewed.medications = (reviewed.medications || []).map((med, i) => ({
+          name: getReviewVal('med_name_' + i) || med.name,
+          dosage: getReviewVal('med_dosage_' + i) || med.dosage,
+          type: getReviewVal('med_type_' + i) || med.type,
+          frequency: getReviewVal('med_frequency_' + i) || med.frequency,
+          duration: getReviewVal('med_duration_' + i) || med.duration,
+          purpose: getReviewVal('med_purpose_' + i) || med.purpose,
+          instructions: getReviewVal('med_instructions_' + i) || med.instructions,
+          category: med.category,
+          withFood: med.withFood,
+          sideEffects: med.sideEffects
+        }));
+        if (getReviewVal('patientName')) reviewed.patientName = getReviewVal('patientName');
+        if (getReviewVal('doctorName')) reviewed.doctorName = getReviewVal('doctorName');
+
+        if (scannedMeds.length > 0) {
+          runMatching(reviewed);
+        } else {
+          renderResults(reviewed);
+          document.getElementById('resultTitle').textContent = 'Decoded Prescription';
+          showScreen('screen-result');
+        }
+      }
+      pendingReviewData = null;
+      pendingReviewType = null;
+      pendingReviewImage = null;
+    }
+
+    async function runMatching(prescriptionData) {
+      showLoading();
+      setLoadStep(1, 'active');
+      document.getElementById('loadingText').textContent = 'Matching medicines...';
+      document.getElementById('loadingSub').textContent = 'Comparing strips against prescription';
+      await sleep(400);
+      setLoadStep(1, 'done');
+
+      setLoadStep(2, 'active');
+      document.getElementById('loadingText').textContent = 'Analyzing matches...';
+      await sleep(400);
+      setLoadStep(2, 'done');
+
+      setLoadStep(3, 'active');
+      document.getElementById('loadingText').textContent = 'Matching...';
+      document.getElementById('loadingSub').textContent = 'Comparing scanned strips with prescription';
+
+      const apiKey = getApiKey();
+      const medList = scannedMeds.map((m, i) => (i+1) + '. ' + m.name + (m.dosage ? ' ' + m.dosage : '') + ' (' + (m.type || 'unknown') + ')').join('\n');
+      const rxList = prescriptionData.medications.map((m, i) => (i+1) + '. ' + m.name + (m.dosage ? ' ' + m.dosage : '') + ' (' + (m.type || 'unknown') + ')').join('\n');
+
+      let matchResult;
+      try {
+        const systemPrompt = `You are a medicine matching expert. You receive two lists:
+1. Scanned medicine strips (what the patient actually has)
+2. Prescription medicines (what the doctor prescribed)
+
+Compare them and return a JSON object (no markdown, no code fences, just raw JSON):
+{
+  "matches": [
+    {
+      "prescriptionMed": "name from prescription",
+      "scannedMed": "matching scanned strip name or null",
+      "status": "matched/partial/no_match",
+      "note": "details about match quality"
+    }
+  ],
+  "unscannedMeds": ["prescription medicines with no matching strip"],
+  "extraScans": ["scanned strips not on the prescription"],
+  "alerts": [
+    {
+      "type": "allergy_warning/interaction_warning/dosage_concern",
+      "severity": "high/medium/low",
+      "title": "short alert title",
+      "description": "clear explanation"
+    }
+  ]
+}
+
+Rules:
+- Match by medicine name (fuzzy matching OK — brand names, generic names, abbreviations should match)
+- "matched" = scanned strip matches a prescription medicine well
+- "partial" = partial match, e.g. same medicine but different dosage
+- "no_match" = no corresponding scanned strip found
+- Always identify unscanned medicines and extra scans`;
+
+        const content = await callGemini(apiKey, systemPrompt, [
+          { role: 'user', parts: [{ text: 'Scanned medicine strips:\n' + medList + '\n\nPrescription medicines:\n' + rxList }] }
+        ], 0.2);
+
+        let jsonStr = content;
+        const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) { jsonStr = jsonMatch[1]; }
+        matchResult = JSON.parse(jsonStr.trim());
+      } catch (err) {
+        hideLoading();
+        alert('Matching failed: ' + err.message);
+        return;
+      }
+
+      setLoadStep(3, 'done');
+      document.getElementById('loadingText').textContent = 'Complete!';
+      await sleep(600);
+      hideLoading();
+
+      const resultData = {
+        medications: prescriptionData.medications,
+        matches: matchResult.matches,
+        unscannedMeds: matchResult.unscannedMeds,
+        extraScans: matchResult.extraScans,
+        alerts: matchResult.alerts || [],
+        rawText: prescriptionData.rawText,
+        doctorName: prescriptionData.doctorName,
+        patientName: prescriptionData.patientName
+      };
+
+      renderResults(resultData);
+      document.getElementById('resultTitle').textContent = 'Match Results';
+      showScreen('screen-result');
+    }
+
+    let currentScheduleData = null;
+
+    async function generateSchedule() {
+      const lastResult = getLastResultData();
+      if (!lastResult || !lastResult.medications || lastResult.medications.length === 0) {
+        alert('No medication data available to create a schedule.');
+        return;
+      }
+
+      showLoading();
+      setLoadStep(1, 'active');
+      document.getElementById('loadingText').textContent = 'Building schedule...';
+      document.getElementById('loadingSub').textContent = 'Analyzing medication timings';
+      await sleep(400);
+      setLoadStep(1, 'done');
+
+      setLoadStep(2, 'active');
+      document.getElementById('loadingText').textContent = 'Optimizing times...';
+      await sleep(400);
+      setLoadStep(2, 'done');
+
+      setLoadStep(3, 'active');
+      document.getElementById('loadingText').textContent = 'Scheduling...';
+      document.getElementById('loadingSub').textContent = 'Creating optimal medication schedule';
+
+      const apiKey = getApiKey();
+      const medList = lastResult.medications.map((m, i) =>
+        (i+1) + '. ' + m.name + (m.dosage ? ' ' + m.dosage : '') + ' - ' + (m.frequency || 'as directed') + (m.withFood ? ' (with food)' : '') + (m.instructions ? ' - ' + m.instructions : '')
+      ).join('\n');
+
+      let scheduleResult;
+      try {
+        const systemPrompt = `You are a medical schedule planner. Given a list of medications with their frequencies and instructions, create an optimal daily medication schedule.
+
+Return a JSON object (no markdown, no code fences, just raw JSON):
+{
+  "slots": [
+    {
+      "time": "HH:MM",
+      "period": "morning/afternoon/evening/night",
+      "label": "e.g. Morning - 8:00 AM",
+      "medications": [
+        {
+          "name": "medicine name",
+          "dosage": "dosage",
+          "instruction": "with food / before bed / etc"
+        }
+      ]
+    }
+  ]
+}
+
+Rules:
+- Group medications that should be taken at the same time
+- Morning: 7:00-9:00, Afternoon: 12:00-14:00, Evening: 18:00-20:00, Night: 21:00-22:00
+- Medications that say "with food" should be during meals (morning/afternoon/evening, not night)
+- Space out medications that shouldn't be taken together
+- Keep the schedule simple and practical
+- Use 12-hour format in labels but 24-hour in time field`;
+
+        const content = await callGemini(apiKey, systemPrompt, [
+          { role: 'user', parts: [{ text: 'Create a daily schedule for these medications:\n\n' + medList }] }
+        ], 0.3);
+
+        let jsonStr = content;
+        const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) { jsonStr = jsonMatch[1]; }
+        scheduleResult = JSON.parse(jsonStr.trim());
+      } catch (err) {
+        hideLoading();
+        alert('Schedule generation failed: ' + err.message);
+        return;
+      }
+
+      setLoadStep(3, 'done');
+      document.getElementById('loadingText').textContent = 'Complete!';
+      await sleep(600);
+      hideLoading();
+
+      currentScheduleData = scheduleResult;
+      renderScheduleReview(scheduleResult);
+      showScreen('screen-schedule');
+    }
+
+    function renderScheduleReview(data) {
+      const body = document.getElementById('scheduleBody');
+      let html = '';
+
+      html += '<div class="schedule-banner"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg><div class="schedule-banner-text"><strong>Your medication schedule is ready</strong>Review the times below. Tap any time to adjust before confirming.</div></div>';
+
+      const slotColors = { morning: 'morning', afternoon: 'afternoon', evening: 'evening', night: 'night' };
+      const slotBgs = { morning: '#FFFBEB', afternoon: '#EFF6FF', evening: '#F5F3FF', night: '#F1F5F9' };
+      const dotColors = ['#F59E0B', '#3B82F6', '#8B5CF6', '#475569'];
+
+      if (data.slots && data.slots.length > 0) {
+        data.slots.forEach((slot, si) => {
+          const periodClass = slotColors[slot.period] || 'morning';
+          const bg = slotBgs[slot.period] || '#f5f5f5';
+          html += '<div class="schedule-day-group">';
+          html += '<div class="schedule-slot" style="border-left:4px solid ' + (dotColors[si % dotColors.length]) + ';">';
+          html += '<div class="schedule-slot-header">';
+          html += '<div class="schedule-time-display">';
+          html += '<div class="schedule-time-icon ' + periodClass + '"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></div>';
+          html += '<div><div class="schedule-time-text">' + escapeHtml(slot.label || slot.period) + '</div>';
+          html += '<div class="schedule-time-sub">' + slot.medications.length + ' medication' + (slot.medications.length > 1 ? 's' : '') + '</div></div>';
+          html += '</div>';
+          html += '<input type="time" class="schedule-time-input" id="schedTime_' + si + '" value="' + escapeHtml(slot.time || '08:00') + '" />';
+          html += '</div>';
+
+          slot.medications.forEach((med, mi) => {
+            const dc = dotColors[si % dotColors.length];
+            html += '<div class="schedule-med-item">';
+            html += '<div class="schedule-med-dot" style="background:' + dc + ';"></div>';
+            html += '<div class="schedule-med-name">' + escapeHtml(med.name) + (med.dosage ? ' ' + escapeHtml(med.dosage) : '') + '</div>';
+            if (med.instruction) html += '<div class="schedule-med-detail">' + escapeHtml(med.instruction) + '</div>';
+            html += '</div>';
+          });
+
+          html += '</div></div>';
+        });
+      } else {
+        html += '<p style="text-align:center;color:#999;padding:20px 0;">Could not generate a schedule. Try scanning again.</p>';
+      }
+
+      body.innerHTML = html;
+    }
+
+    function confirmSchedule() {
+      if (!currentScheduleData || !currentScheduleData.slots) return;
+
+      const confirmedSlots = currentScheduleData.slots.map((slot, i) => {
+        const timeInput = document.getElementById('schedTime_' + i);
+        return {
+          ...slot,
+          time: timeInput ? timeInput.value : slot.time
+        };
+      });
+
+      const finalSchedule = { slots: confirmedSlots, createdAt: new Date().toISOString() };
+
+      const existing = JSON.parse(localStorage.getItem('aegis_schedule') || '[]');
+      existing.push(finalSchedule);
+      localStorage.setItem('aegis_schedule', JSON.stringify(existing));
+
+      updateHomeSchedule(confirmedSlots);
+
+      if ('Notification' in window && Notification.permission !== 'granted') {
+        Notification.requestPermission();
+      }
+
+      setScheduleReminders(confirmedSlots);
+
+      const phoneInput = document.getElementById('schedulePhoneInput');
+      const phoneNumber = phoneInput ? phoneInput.value.replace(/\s+/g, '').trim() : '';
+
+      if (phoneNumber && phoneNumber.match(/^\+\d{7,15}$/)) {
+        fetch('/api/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slots: confirmedSlots, phoneNumber: phoneNumber })
+        })
+        .then(res => res.json())
+        .catch(() => {});
+      }
+
+      currentScheduleData = null;
+      showScreen('screen-schedule-confirm');
+    }
+
+    function setScheduleReminders(slots) {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+      slots.forEach(slot => {
+        const [h, m] = (slot.time || '08:00').split(':').map(Number);
+        const now = new Date();
+        const sched = new Date();
+        sched.setHours(h, m, 0, 0);
+        if (sched <= now) sched.setDate(sched.getDate() + 1);
+
+        const delay = sched.getTime() - now.getTime();
+        if (delay > 0 && delay < 86400000) {
+          setTimeout(() => {
+            const medNames = slot.medications.map(med => med.name).join(', ');
+            new Notification('Aegis - Medication Reminder', {
+              body: 'Time to take: ' + medNames,
+              icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">💊</text></svg>'
+            });
+          }, delay);
+        }
+      });
+    }
+
+    function updateHomeSchedule(slots) {
+      const container = document.getElementById('homeSchedule');
+      if (!container) return;
+
+      let html = '';
+      const dotColors = ['green', 'blue', 'orange', 'purple'];
+      const colorMap = { morning: '#F59E0B', afternoon: '#3B82F6', evening: '#8B5CF6', night: '#475569' };
+
+      slots.forEach((slot, si) => {
+        const timeParts = (slot.time || '08:00').split(':');
+        let hour = parseInt(timeParts[0]);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        if (hour > 12) hour -= 12;
+        if (hour === 0) hour = 12;
+        const timeStr = hour + ':' + timeParts[1] + ' ' + ampm;
+
+        html += '<div class="today-card">';
+        html += '<div class="label" style="color:' + (colorMap[slot.period] || '#888') + ';">' + escapeHtml(slot.period || '') + ' - ' + timeStr + '</div>';
+        slot.medications.forEach(med => {
+          const dc = dotColors[si % dotColors.length];
+          html += '<div class="med-row">';
+          html += '<div class="med-dot ' + dc + '"></div>';
+          html += '<div class="med-info">';
+          html += '<div class="med-name">' + escapeHtml(med.name) + (med.dosage ? ' ' + escapeHtml(med.dosage) : '') + '</div>';
+          html += '<div class="med-time">' + escapeHtml(med.instruction || '') + '</div>';
+          html += '</div>';
+          html += '<div class="med-check"></div>';
+          html += '</div>';
+        });
+        html += '</div>';
+      });
+
+      container.innerHTML = html;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('scheduleToast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 6000);
+    }
+
+    function getLastResultData() {
+      const body = document.getElementById('resultBody');
+      if (!body) return null;
+      return window._lastResultData || null;
+    }
+
+    // ===================== CONSULT CHAT =====================
+    const CHAT_GREETING = "Hello! I'm Aegis, your personal health assistant. I can help you with medication questions, side effects, drug interactions, and general health advice. How can I help you today?";
+    let chatHistory = [{ role: 'assistant', content: CHAT_GREETING }];
+    let chatSending = false;
+
+    async function sendChatMessage() {
+      if (chatSending) return;
+      const chatInput = document.getElementById('chatInput');
+      if (!chatInput) return;
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      chatInput.value = '';
+      appendChatMsg(text, 'user');
+      chatHistory.push({ role: 'user', content: text });
+
+      chatSending = true;
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        appendChatMsg('API key not configured. Set GEMINI_API_KEY in .env and restart server.', 'bot');
+        chatSending = false;
+        return;
+      }
+
+      const typingEl = appendTyping();
+
+      const systemMsg = `You are Aegis, a direct and efficient medical assistant. You help with medications, side effects, interactions, symptoms, general wellness, and preparing questions for a doctor visit.
+
+Be brief and direct:
+- Answer the exact question first — 2-4 short sentences, or a short bullet list for multiple items. No restating the question, no long preamble.
+- Only ask a follow-up question when it's genuinely necessary to answer safely or correctly (e.g. missing dosage, age, or a key symptom detail) — otherwise just answer.
+- Use markdown (bold, bullets) only for scannability, not decoration.
+- Don't repeat that you're a virtual assistant in every message — mention it only when starting a new topic or when it's clinically relevant.
+- For serious symptoms or emergencies, say so immediately and clearly, then stop — don't pad with extra text.
+- If unsure, say so honestly, briefly.`;
+
+      const geminiContents = chatHistory.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }));
+
+      try {
+        const reply = await callGemini(apiKey, systemMsg, geminiContents, 0.5);
+        chatHistory.push({ role: 'assistant', content: reply });
+        removeTyping(typingEl);
+        appendChatMsg(reply, 'bot');
+      } catch (err) {
+        removeTyping(typingEl);
+        appendChatMsg('Sorry, something went wrong: ' + err.message, 'bot');
+      }
+
+      chatSending = false;
+    }
+
+    function appendChatMsg(text, role) {
+      const chatBody = document.getElementById('chatBody');
+      const div = document.createElement('div');
+      div.className = 'chat-msg ' + role;
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble';
+      bubble.innerHTML = formatChatText(text);
+      div.appendChild(bubble);
+      chatBody.appendChild(div);
+      if (role === 'bot') {
+        // Anchor the new answer's top to the top of the viewport so the user reads
+        // top-down by scrolling down, instead of landing at the bottom of the reply.
+        chatBody.scrollTop += (div.getBoundingClientRect().top - chatBody.getBoundingClientRect().top) - 12;
+      } else {
+        chatBody.scrollTop = chatBody.scrollHeight;
+      }
+      return div;
+    }
+
+    function appendTyping() {
+      const chatBody = document.getElementById('chatBody');
+      const div = document.createElement('div');
+      div.className = 'chat-msg bot typing-indicator';
+      div.innerHTML = '<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>';
+      chatBody.appendChild(div);
+      chatBody.scrollTop = chatBody.scrollHeight;
+      return div;
+    }
+
+    function removeTyping(el) {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
+
+    function formatChatText(text) {
+      // Convert markdown-like formatting to HTML
+      let html = escapeHtml(text);
+      // Bold
+      html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      // Italic
+      html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+      // Line breaks
+      html = html.replace(/\n/g, '<br>');
+      // Numbered lists
+      html = html.replace(/^(\d+)\.\s/gm, '<br>$1. ');
+      // Bullet lists
+      html = html.replace(/^[-•]\s/gm, '<br>- ');
+      return html;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const saved = JSON.parse(localStorage.getItem('aegis_schedule') || '[]');
+      if (saved.length > 0) {
+        const last = saved[saved.length - 1];
+        if (last.slots) updateHomeSchedule(last.slots);
+      }
+    });
+  </script>
+</body>
+</html>
