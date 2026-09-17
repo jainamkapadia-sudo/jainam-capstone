@@ -525,27 +525,23 @@
     .scan-corners span::before { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
     .scan-corners span::after { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
 
-    .scan-frame.locked {
-      border-color: #10B981;
-      box-shadow: 0 0 0 3px rgba(16,185,129,0.25);
-      transition: border-color 0.25s, box-shadow 0.25s;
+    .voice-hint-badge {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary);
+      margin-top: 6px;
     }
-    .scan-frame.locked .scan-corners::before,
-    .scan-frame.locked .scan-corners::after,
-    .scan-frame.locked .scan-corners span::before,
-    .scan-frame.locked .scan-corners span::after {
-      border-color: #10B981;
-    }
-    .scan-line.sweeping {
-      background: linear-gradient(90deg, transparent, #10B981, transparent);
-      box-shadow: 0 0 12px rgba(16,185,129,0.6);
-      animation: scanSweep 1.2s ease-in-out 1 forwards;
-    }
-    @keyframes scanSweep {
-      0% { top: 92%; opacity: 0; }
-      12% { opacity: 1; }
-      88% { opacity: 1; }
-      100% { top: 4%; opacity: 0; }
+    .voice-hint-badge.visible { display: flex; }
+    .voice-hint-badge .mic-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--primary);
+      animation: pulse 1.4s infinite;
     }
 
     .camera-error {
@@ -1699,7 +1695,6 @@
         <div class="scanner-viewport" id="scannerViewport">
           <video id="cameraFeed" autoplay playsinline></video>
           <canvas id="captureCanvas"></canvas>
-          <canvas id="autoScanCanvas" style="display:none;"></canvas>
           <img id="capturedImage" alt="Captured prescription" />
           <div class="scan-frame" id="scanFrame">
             <div class="scan-line" id="scanLine"></div>
@@ -1712,6 +1707,7 @@
           </div>
         </div>
         <div class="scanner-hint" id="scannerHint">Align the medicine strip within the frame</div>
+        <div class="voice-hint-badge" id="voiceHintBadge"><span class="mic-dot"></span>Listening — say "Scan"</div>
         <button class="done-strips-btn" id="doneStripsBtn" onclick="switchScanMode('rx')">
           <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
           Done Scanning Strips — Scan Prescription
@@ -1936,146 +1932,84 @@
     let pendingReviewImage = null;
     let pendingGalleryFiles = [];
 
-    // ===================== AUTO-SCAN (alignment detection) =====================
-    const AUTO_SCAN_INTERVAL_MS = 350;
-    const AUTO_SCAN_STABLE_HITS_NEEDED = 4;
-    const AUTO_SCAN_DETAIL_THRESHOLD = 18;
-    const AUTO_SCAN_MOTION_THRESHOLD = 6;
-    const AUTO_SCAN_BRIGHTNESS_MIN = 25;
-    const AUTO_SCAN_BRIGHTNESS_MAX = 235;
-    const AUTO_SCAN_STUCK_HINT_MS = 8000;
-    const AUTO_SCAN_SAMPLE_W = 64;
-    const AUTO_SCAN_SAMPLE_H = 40;
+    // ===================== VOICE-TRIGGERED SCAN =====================
+    // A pixel-heuristic auto-scan (contrast + steadiness) was tried here and removed:
+    // it can't tell "a medicine strip" apart from any other textured surface held
+    // still (a desk, a hand, a patterned shirt), so it fired on things that weren't
+    // medicine. Voice trigger replaces the guesswork with an explicit, reliable cue.
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let voiceRecognition = null;
+    let voiceShouldListen = false;
+    let voiceDenied = false;
 
-    let autoScanTimer = null;
-    let autoScanToken = 0;
-    let autoScanState = 'idle'; // idle | searching | locked | capturing
-    let autoScanStableHits = 0;
-    let autoScanPrevGray = null;
-    let autoScanStartedAt = 0;
+    function startVoiceScan() {
+      if (!SpeechRecognitionCtor || voiceDenied) return;
+      voiceShouldListen = true;
 
-    function defaultScannerHint() {
-      return scanMode === 'strip'
-        ? 'Align the medicine strip within the frame'
-        : 'Align the prescription within the frame';
-    }
+      if (!voiceRecognition) {
+        voiceRecognition = new SpeechRecognitionCtor();
+        voiceRecognition.continuous = true;
+        voiceRecognition.interimResults = true;
+        voiceRecognition.lang = 'en-US';
 
-    function startAutoScan() {
-      stopAutoScan();
-      autoScanState = 'searching';
-      autoScanStableHits = 0;
-      autoScanPrevGray = null;
-      autoScanStartedAt = Date.now();
-      autoScanTimer = setInterval(autoScanTick, AUTO_SCAN_INTERVAL_MS);
-    }
+        voiceRecognition.onresult = (event) => {
+          if (!voiceShouldListen) return;
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            console.log('[voice-scan] heard:', transcript);
+            if (/\bscan\b/i.test(transcript)) {
+              captureAndProcess(); // stops voice listening internally, guarding against re-trigger
+              return;
+            }
+          }
+        };
 
-    function stopAutoScan() {
-      if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
-      autoScanToken++;
-      autoScanState = 'idle';
-      autoScanStableHits = 0;
-      autoScanPrevGray = null;
-      const scanFrame = document.getElementById('scanFrame');
-      const scanLine = document.getElementById('scanLine');
-      if (scanFrame) scanFrame.classList.remove('locked');
-      if (scanLine) scanLine.classList.remove('sweeping');
-      const hint = document.getElementById('scannerHint');
-      if (hint) hint.textContent = defaultScannerHint();
-    }
+        voiceRecognition.onstart = () => {
+          const badge = document.getElementById('voiceHintBadge');
+          if (badge) {
+            badge.innerHTML = '<span class="mic-dot"></span>Listening — say "Scan"';
+            badge.classList.add('visible');
+          }
+        };
 
-    function getAutoScanRoi(video, viewport) {
-      const boxAR = viewport.clientWidth / viewport.clientHeight;
-      const vidAR = video.videoWidth / video.videoHeight;
-      let visW, visH;
-      if (vidAR > boxAR) { visH = video.videoHeight; visW = visH * boxAR; }
-      else { visW = video.videoWidth; visH = visW / boxAR; }
-      const cropX = (video.videoWidth - visW) / 2;
-      const cropY = (video.videoHeight - visH) / 2;
-      return {
-        x: cropX + visW * 0.10,
-        y: cropY + visH * 0.25,
-        w: visW * 0.80,
-        h: visH * 0.50
-      };
-    }
+        voiceRecognition.onerror = (event) => {
+          console.warn('[voice-scan] error:', event.error);
+          const badge = document.getElementById('voiceHintBadge');
+          if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            voiceDenied = true;
+            voiceShouldListen = false;
+            if (badge) badge.classList.remove('visible');
+          } else if (event.error !== 'no-speech' && event.error !== 'aborted' && badge) {
+            // Surface unexpected errors (network, audio-capture, etc.) instead of
+            // failing silently — onend will still retry if we still want to listen.
+            badge.innerHTML = 'Voice error: ' + event.error + ' — tap Capture instead';
+            badge.classList.add('visible');
+          }
+        };
 
-    function autoScanTick() {
-      if (autoScanState !== 'searching') return;
-      const video = document.getElementById('cameraFeed');
-      const viewport = document.getElementById('scannerViewport');
-      if (!cameraStream || !video.videoWidth || !video.videoHeight) return;
-
-      const canvas = document.getElementById('autoScanCanvas');
-      canvas.width = AUTO_SCAN_SAMPLE_W;
-      canvas.height = AUTO_SCAN_SAMPLE_H;
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      const roi = getAutoScanRoi(video, viewport);
-      ctx.drawImage(video, roi.x, roi.y, roi.w, roi.h, 0, 0, AUTO_SCAN_SAMPLE_W, AUTO_SCAN_SAMPLE_H);
-
-      const pixels = ctx.getImageData(0, 0, AUTO_SCAN_SAMPLE_W, AUTO_SCAN_SAMPLE_H).data;
-      const n = AUTO_SCAN_SAMPLE_W * AUTO_SCAN_SAMPLE_H;
-      const gray = new Float32Array(n);
-      let sum = 0;
-      for (let i = 0, p = 0; i < pixels.length; i += 4, p++) {
-        const g = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114;
-        gray[p] = g;
-        sum += g;
-      }
-      const mean = sum / n;
-      let variance = 0;
-      for (let p = 0; p < n; p++) variance += (gray[p] - mean) * (gray[p] - mean);
-      variance /= n;
-      const detail = Math.sqrt(variance);
-
-      let motion = Infinity;
-      if (autoScanPrevGray) {
-        let diff = 0;
-        for (let p = 0; p < n; p++) diff += Math.abs(gray[p] - autoScanPrevGray[p]);
-        motion = diff / n;
-      }
-      autoScanPrevGray = gray;
-
-      const brightnessOk = mean >= AUTO_SCAN_BRIGHTNESS_MIN && mean <= AUTO_SCAN_BRIGHTNESS_MAX;
-      const passes = brightnessOk && detail >= AUTO_SCAN_DETAIL_THRESHOLD && motion <= AUTO_SCAN_MOTION_THRESHOLD;
-
-      autoScanStableHits = passes ? autoScanStableHits + 1 : Math.max(0, autoScanStableHits - 1);
-
-      const hint = document.getElementById('scannerHint');
-      if (hint) {
-        if (autoScanStableHits > 0) {
-          hint.textContent = 'Hold steady…';
-        } else if (Date.now() - autoScanStartedAt > AUTO_SCAN_STUCK_HINT_MS) {
-          hint.textContent = 'Having trouble? Tap Capture to take the photo manually';
-        } else {
-          hint.textContent = defaultScannerHint();
-        }
+        // continuous mode still ends on its own (silence timeout, browser policy) —
+        // restart it as long as we still intend to be listening.
+        voiceRecognition.onend = () => {
+          if (voiceShouldListen) {
+            try { voiceRecognition.start(); } catch (err) { /* already starting */ }
+          }
+        };
       }
 
-      if (autoScanStableHits >= AUTO_SCAN_STABLE_HITS_NEEDED) {
-        enterAutoScanLocked();
+      try {
+        voiceRecognition.start();
+      } catch (err) {
+        console.warn('[voice-scan] start() threw (likely already listening):', err.message);
       }
     }
 
-    function enterAutoScanLocked() {
-      autoScanState = 'locked';
-      if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
-      const myToken = autoScanToken;
-      const scanFrame = document.getElementById('scanFrame');
-      const scanLine = document.getElementById('scanLine');
-      const hint = document.getElementById('scannerHint');
-      if (hint) hint.textContent = 'Scanning…';
-      if (scanFrame) scanFrame.classList.add('locked');
-      if (scanLine) {
-        scanLine.classList.add('sweeping');
-        scanLine.addEventListener('animationend', function onSweepDone() {
-          scanLine.removeEventListener('animationend', onSweepDone);
-          if (myToken !== autoScanToken) return;
-          autoScanState = 'capturing';
-          scanFrame.classList.remove('locked');
-          scanLine.classList.remove('sweeping');
-          captureAndProcess();
-        }, { once: true });
+    function stopVoiceScan() {
+      voiceShouldListen = false;
+      if (voiceRecognition) {
+        try { voiceRecognition.stop(); } catch (err) { /* not listening */ }
       }
+      const badge = document.getElementById('voiceHintBadge');
+      if (badge) badge.classList.remove('visible');
     }
 
     function getApiKey() {
@@ -2133,7 +2067,6 @@
         stripBar.classList.remove('visible');
       }
       resetScanner();
-      startAutoScan();
     }
 
     function resetScanner() {
@@ -2171,18 +2104,14 @@
       scanLine.style.display = 'block';
       errDiv.classList.remove('visible');
 
-      if (cameraStream) { startAutoScan(); return; }
+      if (cameraStream) { startVoiceScan(); return; }
 
       try {
         cameraStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
         });
         video.srcObject = cameraStream;
-        if (video.videoWidth) {
-          startAutoScan();
-        } else {
-          video.addEventListener('loadedmetadata', () => startAutoScan(), { once: true });
-        }
+        startVoiceScan();
       } catch (err) {
         console.warn('Camera access denied:', err);
         video.style.display = 'none';
@@ -2193,7 +2122,7 @@
     }
 
     function stopCamera() {
-      stopAutoScan();
+      stopVoiceScan();
       if (cameraStream) {
         cameraStream.getTracks().forEach(t => t.stop());
         cameraStream = null;
@@ -2257,7 +2186,7 @@
     }
 
     async function captureAndProcess() {
-      stopAutoScan();
+      stopVoiceScan();
       const apiKey = getApiKey();
       if (!apiKey) { alert('API key not configured. Set GEMINI_API_KEY in .env and restart server.'); return; }
       const imageData = captureImage();
