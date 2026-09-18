@@ -119,9 +119,19 @@ const htmlPath = path.join(__dirname, 'aegis-preview.html');
 let html = fs.readFileSync(htmlPath, 'utf-8');
 
 // Inject the API key as a global variable right after <head>
+// Reuse the exact reference drug dataset built for the medicine-validator Skill
+// (Assessment 2) instead of duplicating it — single source of truth.
+const REFERENCE_DRUGS_PATH = path.join(__dirname, '.claude', 'skills', 'medicine-validator', 'reference-drugs.json');
+let referenceDrugsJson = '[]';
+try {
+  referenceDrugsJson = fs.readFileSync(REFERENCE_DRUGS_PATH, 'utf-8').trim();
+} catch (err) {
+  console.warn('  Could not load reference-drugs.json, prescription validation will be skipped:', err.message);
+}
+
 const injected = html.replace(
   '<head>',
-  `<head>\n  <script>window.AEGIS_API_KEY="${API_KEY}";</script>`
+  `<head>\n  <script>window.AEGIS_API_KEY="${API_KEY}";window.AEGIS_REFERENCE_DRUGS=${referenceDrugsJson};</script>`
 );
 
 // Parse JSON body helper
