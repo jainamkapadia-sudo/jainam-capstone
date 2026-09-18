@@ -118,7 +118,6 @@ async function sendWhatsAppReminder(phoneNumber, slot, scheduleId) {
 const htmlPath = path.join(__dirname, 'aegis-preview.html');
 let html = fs.readFileSync(htmlPath, 'utf-8');
 
-// Inject the API key as a global variable right after <head>
 // Reuse the exact reference drug dataset built for the medicine-validator Skill
 // (Assessment 2) instead of duplicating it — single source of truth.
 const REFERENCE_DRUGS_PATH = path.join(__dirname, '.claude', 'skills', 'medicine-validator', 'reference-drugs.json');
@@ -129,10 +128,67 @@ try {
   console.warn('  Could not load reference-drugs.json, prescription validation will be skipped:', err.message);
 }
 
+// NOTE: the real GEMINI_API_KEY is intentionally NOT injected into the page here.
+// It never leaves this process — the browser calls POST /api/gemini instead, and
+// this server makes the actual Gemini call. window.AEGIS_API_KEY is just a
+// non-secret "is the app ready" flag the client already checks before scanning.
 const injected = html.replace(
   '<head>',
-  `<head>\n  <script>window.AEGIS_API_KEY="${API_KEY}";window.AEGIS_REFERENCE_DRUGS=${referenceDrugsJson};</script>`
+  `<head>\n  <script>window.AEGIS_API_KEY="server-configured";window.AEGIS_REFERENCE_DRUGS=${referenceDrugsJson};</script>`
 );
+
+const AI_MODEL = 'gemini-3.6-flash';
+
+// Gemini's vision endpoint is observed to fail intermittently with 503 "high demand"
+// even when the service is otherwise healthy — retrying a couple of times with
+// backoff clears most of these transient failures instead of surfacing them to the user.
+const GEMINI_MAX_RETRIES = 2;
+const GEMINI_RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function callGeminiServerSide(systemPrompt, contents, temperature) {
+  for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt++) {
+    let response;
+    try {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents: contents,
+            generationConfig: { temperature: temperature }
+          })
+        }
+      );
+    } catch (networkErr) {
+      // fetch itself threw (e.g. connection reset) — treat like a retryable failure.
+      if (attempt === GEMINI_MAX_RETRIES) throw new Error(`Gemini request failed: ${networkErr.message}`);
+      console.warn(`  Gemini network error, retrying (attempt ${attempt + 1}/${GEMINI_MAX_RETRIES}): ${networkErr.message}`);
+      await delay(500 * Math.pow(2, attempt));
+      continue;
+    }
+
+    if (response.ok) {
+      const data = await response.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      return parts.map(p => p.text || '').join('');
+    }
+
+    const errBody = await response.text();
+    const isRetryable = GEMINI_RETRYABLE_STATUSES.has(response.status);
+    if (!isRetryable || attempt === GEMINI_MAX_RETRIES) {
+      throw new Error(`Gemini API error ${response.status}: ${errBody}`);
+    }
+
+    console.warn(`  Gemini call got ${response.status}, retrying (attempt ${attempt + 1}/${GEMINI_MAX_RETRIES})...`);
+    await delay(500 * Math.pow(2, attempt));
+  }
+}
 
 // Parse JSON body helper
 function parseBody(req) {
@@ -150,6 +206,26 @@ function parseBody(req) {
 }
 
 const server = http.createServer(async (req, res) => {
+  // API: Proxy Gemini calls — keeps GEMINI_API_KEY server-side only, never sent to the browser.
+  if (req.method === 'POST' && req.url === '/api/gemini') {
+    try {
+      const { systemPrompt, contents, temperature } = await parseBody(req);
+      if (!systemPrompt || !Array.isArray(contents)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'systemPrompt and contents are required' }));
+        return;
+      }
+      const text = await callGeminiServerSide(systemPrompt, contents, temperature ?? 0.3);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ text }));
+    } catch (err) {
+      console.error('Gemini proxy error:', err.message);
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
   // API: Schedule reminders
   if (req.method === 'POST' && req.url === '/api/schedule') {
     try {
@@ -250,7 +326,9 @@ const server = http.createServer(async (req, res) => {
   res.end(injected);
 });
 
-const PORT = 3000;
+// Railway (and most PaaS hosts) assign the port via env var and route traffic to it —
+// the app must bind to that, not a hardcoded port.
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`\n  Aegis running at http://localhost:${PORT}`);
   loadSchedules();
