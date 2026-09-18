@@ -159,12 +159,13 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function callGeminiServerSide(systemPrompt, contents, temperature) {
+async function callGeminiServerSide(systemPrompt, contents, temperature, overrideKey) {
+  const effectiveKey = overrideKey || API_KEY;
   for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt++) {
     let response;
     try {
       response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${effectiveKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -219,7 +220,8 @@ function geminiContentsToOpenAiMessages(contents) {
   }));
 }
 
-async function callGrokServerSide(systemPrompt, contents, temperature) {
+async function callGrokServerSide(systemPrompt, contents, temperature, overrideKey) {
+  const effectiveKey = overrideKey || GROK_API_KEY;
   const messages = [{ role: 'system', content: systemPrompt }, ...geminiContentsToOpenAiMessages(contents)];
 
   for (let attempt = 0; attempt <= GROK_MAX_RETRIES; attempt++) {
@@ -229,7 +231,7 @@ async function callGrokServerSide(systemPrompt, contents, temperature) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GROK_API_KEY}`
+          'Authorization': `Bearer ${effectiveKey}`
         },
         body: JSON.stringify({ model: GROK_MODEL, messages, temperature })
       });
@@ -256,10 +258,12 @@ async function callGrokServerSide(systemPrompt, contents, temperature) {
   }
 }
 
-async function callAIServerSide(systemPrompt, contents, temperature) {
+async function callAIServerSide(systemPrompt, contents, temperature, overrideKey) {
+  // A tester-supplied key always means "use it with whichever provider is
+  // currently configured" — we don't ask the client to know or care about that.
   return AI_PROVIDER === 'grok'
-    ? callGrokServerSide(systemPrompt, contents, temperature)
-    : callGeminiServerSide(systemPrompt, contents, temperature);
+    ? callGrokServerSide(systemPrompt, contents, temperature, overrideKey)
+    : callGeminiServerSide(systemPrompt, contents, temperature, overrideKey);
 }
 
 // Parse JSON body helper
@@ -283,13 +287,15 @@ const server = http.createServer(async (req, res) => {
   // existing client; which provider actually handles it is chosen by AI_PROVIDER.
   if (req.method === 'POST' && req.url === '/api/gemini') {
     try {
-      const { systemPrompt, contents, temperature } = await parseBody(req);
+      const { systemPrompt, contents, temperature, userApiKey } = await parseBody(req);
       if (!systemPrompt || !Array.isArray(contents)) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'systemPrompt and contents are required' }));
         return;
       }
-      const text = await callAIServerSide(systemPrompt, contents, temperature ?? 0.3);
+      // userApiKey is optional and tester-supplied (bring-your-own-key from the
+      // frontend) — used only for this one call, never logged or persisted.
+      const text = await callAIServerSide(systemPrompt, contents, temperature ?? 0.3, userApiKey || null);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ text }));
     } catch (err) {

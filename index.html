@@ -258,6 +258,76 @@
     .search-bar svg { width: 18px; height: 18px; fill: rgba(255,255,255,0.45); flex-shrink: 0; }
     .search-bar span { color: rgba(255,255,255,0.4); font-size: 14px; font-weight: 400; }
 
+    .api-key-btn {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.14);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .api-key-btn svg { width: 17px; height: 17px; fill: rgba(255,255,255,0.85); }
+    .api-key-btn.custom-key { background: rgba(16,185,129,0.35); border-color: rgba(16,185,129,0.5); }
+
+    .api-key-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 24px;
+    }
+    .api-key-modal.active { display: flex; }
+    .api-key-modal-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 22px;
+      max-width: 340px;
+      width: 100%;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+    }
+    .api-key-modal-card h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+    .api-key-modal-card p { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px; }
+    .api-key-modal-card input {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      margin-bottom: 14px;
+      box-sizing: border-box;
+    }
+    .api-key-modal-actions { display: flex; gap: 10px; }
+    .api-key-modal-actions button {
+      flex: 1;
+      padding: 11px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .api-key-modal-actions .btn-clear { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
+    .api-key-modal-actions .btn-save { background: var(--primary); color: #fff; }
+    .api-key-modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      font-size: 16px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
     .home-body { padding: 20px; flex: 1; overflow-y: auto; }
 
     .section-title {
@@ -1568,6 +1638,9 @@
               <svg viewBox="0 0 24 24" fill="#fff"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
             </div>
           </div>
+          <div class="api-key-btn" id="apiKeyBtn" onclick="showApiKeyModal()" title="Use your own API key">
+            <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-2 .9-2 2z"/></svg>
+          </div>
           <div class="greeting">Good morning</div>
           <div class="name">Sarah Johnson</div>
           <div class="search-bar">
@@ -1813,6 +1886,20 @@
 
       <div class="schedule-toast" id="scheduleToast">Schedule saved!</div>
 
+      <!-- Bring-your-own API key -->
+      <div class="api-key-modal" id="apiKeyModal">
+        <div class="api-key-modal-card">
+          <div class="api-key-modal-close" onclick="hideApiKeyModal()">✕</div>
+          <h3>Use Your Own API Key</h3>
+          <p>Optional — paste your own Gemini API key to use it for scans and chat in this browser instead of the server's default key. Stored only in your browser, never saved on the server. Leave blank and save to go back to the default.</p>
+          <input type="password" id="apiKeyInput" placeholder="Paste your Gemini API key" autocomplete="off" />
+          <div class="api-key-modal-actions">
+            <button class="btn-clear" onclick="clearUserApiKey()">Clear</button>
+            <button class="btn-save" onclick="saveUserApiKey()">Save</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Schedule Confirmation -->
       <div class="screen" id="screen-schedule-confirm">
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px 24px;text-align:center;background:var(--bg);">
@@ -1896,10 +1983,11 @@
     // kept as a parameter for compatibility with existing call sites, but its value is
     // just a non-secret "ready" flag now (see server.js), not used for auth here.
     async function callGemini(apiKey, systemPrompt, contents, temperature) {
+      const userApiKey = getUserApiKey();
       const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemPrompt, contents, temperature })
+        body: JSON.stringify({ systemPrompt, contents, temperature, userApiKey: userApiKey || undefined })
       });
 
       if (!response.ok) {
@@ -2008,6 +2096,47 @@
 
     function getApiKey() {
       return window.AEGIS_API_KEY || '';
+    }
+
+    // Bring-your-own API key: lets a tester use their own Gemini key instead of
+    // whatever's configured on the server, without ever needing repo/deploy access.
+    // Stored only in this browser's localStorage — the server only sees it on the
+    // one request it's used for, and never logs or persists it.
+    function getUserApiKey() {
+      try { return localStorage.getItem('aegis_user_api_key') || ''; } catch (err) { return ''; }
+    }
+
+    function updateApiKeyBtnState() {
+      const btn = document.getElementById('apiKeyBtn');
+      if (btn) btn.classList.toggle('custom-key', !!getUserApiKey());
+    }
+
+    function showApiKeyModal() {
+      document.getElementById('apiKeyInput').value = getUserApiKey();
+      document.getElementById('apiKeyModal').classList.add('active');
+    }
+
+    function hideApiKeyModal() {
+      document.getElementById('apiKeyModal').classList.remove('active');
+    }
+
+    function saveUserApiKey() {
+      const val = document.getElementById('apiKeyInput').value.trim();
+      try {
+        if (val) { localStorage.setItem('aegis_user_api_key', val); }
+        else { localStorage.removeItem('aegis_user_api_key'); }
+      } catch (err) { /* localStorage unavailable — key just won't persist across reloads */ }
+      updateApiKeyBtnState();
+      showToast(val ? 'Using your own API key' : 'Using default API key');
+      hideApiKeyModal();
+    }
+
+    function clearUserApiKey() {
+      try { localStorage.removeItem('aegis_user_api_key'); } catch (err) { /* ignore */ }
+      document.getElementById('apiKeyInput').value = '';
+      updateApiKeyBtnState();
+      showToast('Using default API key');
+      hideApiKeyModal();
     }
 
     const screenOrder = ['screen-splash','screen-home','screen-scanner','screen-result','screen-review','screen-schedule','screen-schedule-confirm','screen-chat'];
@@ -3234,6 +3363,7 @@ Be brief and direct:
         const last = saved[saved.length - 1];
         if (last.slots) updateHomeSchedule(last.slots);
       }
+      updateApiKeyBtnState();
     });
   </script>
 </body>
