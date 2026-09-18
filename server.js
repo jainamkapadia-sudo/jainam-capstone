@@ -3,26 +3,30 @@ const fs = require('fs');
 const path = require('path');
 const cron = require('node-cron');
 
-// Read .env file
+// Load .env for local development only. Platforms like Railway inject variables
+// directly into process.env — no .env file exists in that container at all — so
+// this must merge into process.env rather than read into a separate object, and
+// must never overwrite a value the platform already set.
 const envPath = path.join(__dirname, '.env');
-const envVars = {};
 if (fs.existsSync(envPath)) {
   const envContent = fs.readFileSync(envPath, 'utf-8');
   envContent.split('\n').forEach(line => {
     const match = line.match(/^\s*([A-Z_]+)\s*=\s*(.+)\s*$/);
-    if (match) envVars[match[1]] = match[2].trim();
+    if (match && process.env[match[1]] === undefined) {
+      process.env[match[1]] = match[2].trim();
+    }
   });
 }
 
-const API_KEY = envVars.GEMINI_API_KEY || '';
-const GROK_API_KEY = envVars.GROK_API_KEY || '';
+const API_KEY = process.env.GEMINI_API_KEY || '';
+const GROK_API_KEY = process.env.GROK_API_KEY || '';
 // Which provider actually serves scan/chat/schedule requests. Configurable because
 // we've hit provider-specific problems more than once (a deprecated Gemini model, a
 // Gemini free-tier daily quota) — switching should be a .env edit, not a code change.
-const AI_PROVIDER = (envVars.AI_PROVIDER || 'gemini').toLowerCase();
-const TWILIO_SID = envVars.TWILIO_ACCOUNT_SID || '';
-const TWILIO_TOKEN = envVars.TWILIO_AUTH_TOKEN || '';
-const TWILIO_WHATSAPP = envVars.TWILIO_WHATSAPP_NUMBER || '';
+const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID || '';
+const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
+const TWILIO_WHATSAPP = process.env.TWILIO_WHATSAPP_NUMBER || '';
 
 if (AI_PROVIDER === 'grok') {
   if (!GROK_API_KEY || GROK_API_KEY === 'your-grok-key-here') {
