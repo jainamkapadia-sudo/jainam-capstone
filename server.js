@@ -15,12 +15,22 @@ if (fs.existsSync(envPath)) {
 }
 
 const API_KEY = envVars.GEMINI_API_KEY || '';
+const GROK_API_KEY = envVars.GROK_API_KEY || '';
+// Which provider actually serves scan/chat/schedule requests. Configurable because
+// we've hit provider-specific problems more than once (a deprecated Gemini model, a
+// Gemini free-tier daily quota) — switching should be a .env edit, not a code change.
+const AI_PROVIDER = (envVars.AI_PROVIDER || 'gemini').toLowerCase();
 const TWILIO_SID = envVars.TWILIO_ACCOUNT_SID || '';
 const TWILIO_TOKEN = envVars.TWILIO_AUTH_TOKEN || '';
 const TWILIO_WHATSAPP = envVars.TWILIO_WHATSAPP_NUMBER || '';
 
-if (!API_KEY || API_KEY === 'your-key-here') {
-  console.error('ERROR: Set your GEMINI_API_KEY in the .env file');
+if (AI_PROVIDER === 'grok') {
+  if (!GROK_API_KEY || GROK_API_KEY === 'your-grok-key-here') {
+    console.error('ERROR: AI_PROVIDER=grok but GROK_API_KEY is not set in the .env file');
+    process.exit(1);
+  }
+} else if (!API_KEY || API_KEY === 'your-key-here') {
+  console.error('ERROR: Set your GEMINI_API_KEY in the .env file (or set AI_PROVIDER=grok and GROK_API_KEY)');
   process.exit(1);
 }
 
@@ -190,6 +200,68 @@ async function callGeminiServerSide(systemPrompt, contents, temperature) {
   }
 }
 
+const GROK_MODEL = 'grok-4.6';
+const GROK_MAX_RETRIES = 2;
+const GROK_RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+// The client always builds `contents` in Gemini's shape (role + parts, with
+// inline_data for images) regardless of which provider is actually serving the
+// request — this converts it to OpenAI-style messages for Grok's API, so nothing
+// in aegis-preview.html needs to know or care which provider is active.
+function geminiContentsToOpenAiMessages(contents) {
+  return contents.map(c => ({
+    role: c.role === 'model' ? 'assistant' : 'user',
+    content: c.parts.map(p => {
+      if (p.text != null) return { type: 'text', text: p.text };
+      if (p.inline_data) return { type: 'image_url', image_url: { url: `data:${p.inline_data.mime_type};base64,${p.inline_data.data}` } };
+      return null;
+    }).filter(Boolean)
+  }));
+}
+
+async function callGrokServerSide(systemPrompt, contents, temperature) {
+  const messages = [{ role: 'system', content: systemPrompt }, ...geminiContentsToOpenAiMessages(contents)];
+
+  for (let attempt = 0; attempt <= GROK_MAX_RETRIES; attempt++) {
+    let response;
+    try {
+      response = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GROK_API_KEY}`
+        },
+        body: JSON.stringify({ model: GROK_MODEL, messages, temperature })
+      });
+    } catch (networkErr) {
+      if (attempt === GROK_MAX_RETRIES) throw new Error(`Grok request failed: ${networkErr.message}`);
+      console.warn(`  Grok network error, retrying (attempt ${attempt + 1}/${GROK_MAX_RETRIES}): ${networkErr.message}`);
+      await delay(500 * Math.pow(2, attempt));
+      continue;
+    }
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || '';
+    }
+
+    const errBody = await response.text();
+    const isRetryable = GROK_RETRYABLE_STATUSES.has(response.status);
+    if (!isRetryable || attempt === GROK_MAX_RETRIES) {
+      throw new Error(`Grok API error ${response.status}: ${errBody}`);
+    }
+
+    console.warn(`  Grok call got ${response.status}, retrying (attempt ${attempt + 1}/${GROK_MAX_RETRIES})...`);
+    await delay(500 * Math.pow(2, attempt));
+  }
+}
+
+async function callAIServerSide(systemPrompt, contents, temperature) {
+  return AI_PROVIDER === 'grok'
+    ? callGrokServerSide(systemPrompt, contents, temperature)
+    : callGeminiServerSide(systemPrompt, contents, temperature);
+}
+
 // Parse JSON body helper
 function parseBody(req) {
   return new Promise((resolve, reject) => {
@@ -206,7 +278,9 @@ function parseBody(req) {
 }
 
 const server = http.createServer(async (req, res) => {
-  // API: Proxy Gemini calls — keeps GEMINI_API_KEY server-side only, never sent to the browser.
+  // API: Proxy AI calls — keeps GEMINI_API_KEY/GROK_API_KEY server-side only, never
+  // sent to the browser. Route name kept as /api/gemini for compatibility with the
+  // existing client; which provider actually handles it is chosen by AI_PROVIDER.
   if (req.method === 'POST' && req.url === '/api/gemini') {
     try {
       const { systemPrompt, contents, temperature } = await parseBody(req);
@@ -215,11 +289,11 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ error: 'systemPrompt and contents are required' }));
         return;
       }
-      const text = await callGeminiServerSide(systemPrompt, contents, temperature ?? 0.3);
+      const text = await callAIServerSide(systemPrompt, contents, temperature ?? 0.3);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ text }));
     } catch (err) {
-      console.error('Gemini proxy error:', err.message);
+      console.error(`${AI_PROVIDER} proxy error:`, err.message);
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     }
