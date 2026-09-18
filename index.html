@@ -2341,6 +2341,10 @@ Rules:
       document.getElementById('loadingText').textContent = 'Analyzing...';
       document.getElementById('loadingSub').textContent = 'Analyzing prescription via Gemini Vision';
 
+      // Reference drug dataset from the medicine-validator Skill (see .claude/skills/medicine-validator/),
+      // injected server-side from the exact same reference-drugs.json — reused, not duplicated.
+      const referenceDrugs = Array.isArray(window.AEGIS_REFERENCE_DRUGS) ? window.AEGIS_REFERENCE_DRUGS : [];
+
       let aiResult;
       try {
         const systemPrompt = `You are an expert medical prescription analyzer with exceptional handwriting recognition skills. You MUST read and extract ALL text from this prescription image, including handwritten text. Even if the handwriting is messy, unclear, or difficult to read, you must make your best effort to interpret every word. DO NOT say the text is illegible — instead, provide your best interpretation of what you can see.
@@ -2370,6 +2374,14 @@ Given the prescription image, extract a JSON object with this exact structure (n
       "description": "clear explanation"
     }
   ],
+  "validationFlags": [
+    {
+      "medicine": "medicine name this flag is about",
+      "type": "dosage_out_of_range/frequency_exceeded/unknown_medicine",
+      "severity": "high/medium",
+      "detail": "clear explanation of the concern"
+    }
+  ],
   "rawText": "all text you can read from the prescription image",
   "doctorName": "if readable, the prescribing doctor's name",
   "patientName": "if readable, the patient's name"
@@ -2386,7 +2398,14 @@ CRITICAL RULES:
 - Look carefully at the ENTIRE image and extract EVERY medicine listed
 - Always include the rawText field with all text you can read from the image
 - Make alerts only if there are genuine medical concerns; empty array is fine
-- Use plain English, no medical jargon without explanation`;
+- Use plain English, no medical jargon without explanation
+
+VALIDATION RULES (populate validationFlags using this reference drug data — same rules as the medicine-validator skill):
+${JSON.stringify(referenceDrugs)}
+- Unknown medicine: if a medication's name doesn't match any entry above, flag severity "medium", type "unknown_medicine".
+- Dosage out of range: parse the numeric mg value from "dosage"; if outside that medicine's dosageRangeMg, flag severity "high", type "dosage_out_of_range".
+- Frequency exceeded: count the doses/day in "frequency" (count the 1s in slot notation, e.g. 1-0-1 = 2); if it exceeds maxFrequencyPerDay, flag severity "high", type "frequency_exceeded".
+- A medication with none of the above gets no flag. validationFlags is [] if nothing to flag or the reference list above is empty.`;
 
         const userParts = [
           { text: 'This is a handwritten prescription. Read EVERY line of text carefully, including all medicine names, dosages, and instructions. Decode the handwriting — do not skip anything.' },
@@ -2405,6 +2424,22 @@ CRITICAL RULES:
         hideLoading();
         alert('Analysis failed: ' + err.message);
         return;
+      }
+
+      // Defensive guard: validationFlags is a new, best-effort field. If the model
+      // omits it or returns something malformed (garbage output), don't let that
+      // break the scan that already succeeded — just treat it as "no flags."
+      try {
+        aiResult.validationFlags = Array.isArray(aiResult.validationFlags)
+          ? aiResult.validationFlags.filter(f =>
+              f && typeof f === 'object' &&
+              typeof f.medicine === 'string' &&
+              typeof f.severity === 'string'
+            )
+          : [];
+      } catch (err) {
+        console.warn('validationFlags malformed, ignoring:', err);
+        aiResult.validationFlags = [];
       }
 
       setLoadStep(3, 'done');
@@ -2435,6 +2470,25 @@ CRITICAL RULES:
               <div class="alert-text">
                 <h4>${escapeHtml(alert.title)}</h4>
                 <p>${escapeHtml(alert.description)}</p>
+              </div>
+            </div>`;
+        });
+      }
+
+      // Validation flags (dosage/frequency/unknown-medicine checks against the reference drug dataset)
+      if (data.validationFlags && data.validationFlags.length > 0) {
+        data.validationFlags.forEach(flag => {
+          const isHigh = flag.severity === 'high';
+          const cls = isHigh ? 'allergy-banner' : 'alert-banner';
+          const iconBg = isHigh ? '#EF4444' : '#F59E0B';
+          html += `
+            <div class="${cls}">
+              <div class="alert-icon" style="background:${iconBg}">
+                <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+              </div>
+              <div class="alert-text">
+                <h4>${escapeHtml(flag.medicine || 'Unknown medicine')}</h4>
+                <p>${escapeHtml(flag.detail || flag.type || '')}</p>
               </div>
             </div>`;
         });
@@ -2660,6 +2714,18 @@ CRITICAL RULES:
           if (data.doctorName) html += reviewField('doctorName', 'Doctor Name', data.doctorName);
           html += '</div>';
         }
+
+        if (data.validationFlags && data.validationFlags.length > 0) {
+          const hasHigh = data.validationFlags.some(f => f.severity === 'high');
+          html += '<div class="' + (hasHigh ? 'allergy-banner' : 'alert-banner') + '">';
+          html += '<div class="alert-icon"><svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg></div>';
+          html += '<div class="alert-text"><h4>Validation Flags</h4><ul class="disclaimer-list">';
+          html += data.validationFlags.map(f =>
+            '<li><strong>' + escapeHtml(f.medicine || 'Unknown') + '</strong> (' + escapeHtml(f.severity || '') + '): ' + escapeHtml(f.detail || f.type || '')
+          ).join('');
+          html += '</ul><p class="disclaimer-footnote">Checked against a small reference drug dataset — verify with a pharmacist or doctor.</p></div>';
+          html += '</div>';
+        }
       }
 
       body.innerHTML = html;
@@ -2814,6 +2880,7 @@ Rules:
         unscannedMeds: matchResult.unscannedMeds,
         extraScans: matchResult.extraScans,
         alerts: matchResult.alerts || [],
+        validationFlags: prescriptionData.validationFlags || [],
         rawText: prescriptionData.rawText,
         doctorName: prescriptionData.doctorName,
         patientName: prescriptionData.patientName
