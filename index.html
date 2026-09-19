@@ -3357,34 +3357,42 @@ Be brief and direct:
       return s;
     }
 
-    function buildWingShape(THREE) {
-      // A swept bird wing: smooth leading edge from the body out to a tapered tip,
-      // scalloped trailing edge (a run of shallow arcs) reading as individual feathers.
+    function buildFeatherShape(THREE, length, width) {
+      // One pointed feather blade: narrow at the base, widest a bit past the middle,
+      // tapering to a point at the tip — a fan of these reads as an actual wing far
+      // more convincingly than trying to fake feathers with one scalloped outline.
       const s = new THREE.Shape();
-      s.moveTo(0, 0.02);
-      s.bezierCurveTo(0.22, 0.32, 0.6, 0.48, 1.15, 0.44);
-      s.bezierCurveTo(1.32, 0.43, 1.42, 0.34, 1.4, 0.24);
-      s.bezierCurveTo(1.24, 0.3, 1.1, 0.2, 1.14, 0.1);
-      s.bezierCurveTo(0.98, 0.17, 0.84, 0.06, 0.88, -0.02);
-      s.bezierCurveTo(0.72, 0.06, 0.58, -0.04, 0.62, -0.1);
-      s.bezierCurveTo(0.46, 0.0, 0.32, -0.08, 0.34, -0.12);
-      s.bezierCurveTo(0.2, -0.04, 0.08, -0.08, 0, -0.04);
-      s.closePath();
+      s.moveTo(0, 0);
+      s.quadraticCurveTo(width, length * 0.42, 0, length);
+      s.quadraticCurveTo(-width, length * 0.42, 0, 0);
       return s;
     }
 
-    function gradientVertexColors(THREE, geometry, colorTop, colorBottom, minY, maxY) {
-      const pos = geometry.attributes.position;
-      const colors = [];
-      const span = Math.max(0.0001, maxY - minY);
-      const top = new THREE.Color(colorTop), bottom = new THREE.Color(colorBottom);
-      for (let i = 0; i < pos.count; i++) {
-        const t = clamp01((pos.getY(i) - minY) / span);
-        const c = bottom.clone().lerp(top, t);
-        colors.push(c.r, c.g, c.b);
+    function buildWingGroup(THREE, color) {
+      // Fat, overlapping feather blades (length:width ~3:1) packed into a tight fan —
+      // the first attempt used thin length:width ~10:1 blades spread wide apart, which
+      // read as spiky rays instead of a solid wing silhouette like the reference image.
+      const wing = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.45, roughness: 0.35, side: THREE.DoubleSide });
+      const FEATHER_COUNT = 5;
+      for (let i = 0; i < FEATHER_COUNT; i++) {
+        const t = i / (FEATHER_COUNT - 1); // 0 = topmost/longest feather, 1 = bottommost/shortest
+        const length = 1.55 - t * 0.55;
+        const width = 0.42 - t * 0.1;
+        const geo = new THREE.ExtrudeGeometry(buildFeatherShape(THREE, length, width), { depth: 0.025, bevelEnabled: false });
+        const feather = new THREE.Mesh(geo, mat);
+        // -80deg..-130deg: a feather shape points along local +Y by default, so this
+        // range sweeps the fan to point mostly outward (+X) — slightly upward for the
+        // top/longest feather, slightly downward for the bottom/shortest one. The
+        // previous -8deg..+42deg range kept everything near-vertical, which pointed the
+        // whole fan straight up into a "crown" instead of outward into a wing.
+        feather.rotation.z = THREE.MathUtils.degToRad(-80 - t * 50);
+        feather.position.z = -t * 0.02; // slight layering so lower feathers sit behind
+        wing.add(feather);
       }
-      geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      return wing;
     }
+
 
     function initSplash3D() {
       const canvas = document.getElementById('splashCanvas');
@@ -3418,7 +3426,7 @@ Be brief and direct:
       // compact, centered emblem occupying roughly the upper half of the screen,
       // leaving clear room below for the title/subtitle/button — not a shape that
       // fills the frame and has to be shrunk-and-shifted afterward to make space.
-      camera.position.set(0, 0.15, 9);
+      camera.position.set(0, 0.35, 11);
       camera.lookAt(0, 0.1, 0);
 
       function resize() {
@@ -3485,17 +3493,35 @@ Be brief and direct:
         });
       }
 
-      const snakeA = { curve: makeHelixCurve(2.6, 0), color: 0x2563eb, mesh: null };
-      const snakeB = { curve: makeHelixCurve(2.6, Math.PI), color: 0x0d9488, mesh: null };
+      // Both snakes share one color now (were blue + teal) — the two-tube helix still
+      // reads clearly as twin serpents without needing different hues to tell them apart.
+      const SNAKE_COLOR = 0x14b8a6;
+      const snakeA = { curve: makeHelixCurve(2.6, 0), color: SNAKE_COLOR, mesh: null };
+      const snakeB = { curve: makeHelixCurve(2.6, Math.PI), color: SNAKE_COLOR, mesh: null };
       [snakeA, snakeB].forEach(s => {
         s.material = new THREE.MeshStandardMaterial({
           color: s.color, emissive: s.color, emissiveIntensity: 0.9, metalness: 0.35, roughness: 0.4
         });
+        // A small elongated head + two eye dots at the growing tip — a plain-radius
+        // tube alone reads as a cable, not a snake; the head is what sells it.
+        s.head = new THREE.Group();
+        // Noticeably wider than the 0.085-radius tube so it actually reads as a head
+        // bulge rather than blending into the tube it's attached to.
+        const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 16), s.material);
+        headMesh.scale.set(1, 0.75, 1.4);
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.2 });
+        const eyeGeo = new THREE.SphereGeometry(0.03, 8, 8);
+        const eyeL = new THREE.Mesh(eyeGeo, eyeMat); eyeL.position.set(0.09, 0.03, 0.14);
+        const eyeR = new THREE.Mesh(eyeGeo, eyeMat); eyeR.position.set(-0.09, 0.03, 0.14);
+        s.head.add(headMesh, eyeL, eyeR);
+        s.head.visible = false;
+        group.add(s.head);
       });
 
       function updateSnake(s, progress) {
         if (progress <= 0.001) {
           if (s.mesh) { s.mesh.visible = false; }
+          s.head.visible = false;
           return;
         }
         const curve = wrappedCurve(s.curve, progress);
@@ -3509,6 +3535,16 @@ Be brief and direct:
           s.mesh = new THREE.Mesh(geo, s.material);
           group.add(s.mesh);
         }
+
+        // Head rides the growing tip, oriented along the curve's tangent there, and
+        // pops in only over the last bit of growth so it doesn't appear prematurely.
+        const tip = curve.getPoint(1);
+        const tangent = curve.getTangent(1).normalize();
+        s.head.position.copy(tip);
+        s.head.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tangent);
+        const headScale = clamp01((progress - 0.85) / 0.15);
+        s.head.scale.setScalar(headScale);
+        s.head.visible = headScale > 0.001;
       }
 
       // --- Sphere cap ---
@@ -3520,15 +3556,12 @@ Be brief and direct:
       sphere.scale.setScalar(0.0001);
       group.add(sphere);
 
-      // --- Wings ---
-      const wingShape = buildWingShape(THREE);
-      const wingGeo = new THREE.ExtrudeGeometry(wingShape, { depth: 0.04, bevelEnabled: false });
-      gradientVertexColors(THREE, wingGeo, 0x22d3ee, 0x1e3a8a, -0.12, 0.48);
-      const wingMat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.55, roughness: 0.3, side: THREE.DoubleSide });
-      const wingR = new THREE.Mesh(wingGeo, wingMat);
+      // --- Wings: a fan of individual feathers per side, not one solid silhouette ---
+      const WING_COLOR = 0x22d3ee;
+      const wingR = buildWingGroup(THREE, WING_COLOR);
       wingR.position.set(0.05, ROD_TOP_Y - 0.35, 0);
       wingR.scale.set(0.001, 1, 1);
-      const wingL = new THREE.Mesh(wingGeo, wingMat);
+      const wingL = buildWingGroup(THREE, WING_COLOR);
       wingL.position.set(-0.05, ROD_TOP_Y - 0.35, 0);
       wingL.scale.set(-0.001, 1, 1);
       group.add(wingR, wingL);
