@@ -135,16 +135,6 @@
       right: 0;
       z-index: 3;
     }
-    .hex-grid-bg {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      opacity: 0.35;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath d='M28 0 L56 16 L56 49 L28 65 L0 49 L0 16 Z' fill='none' stroke='%2322d3ee' stroke-opacity='0.35' stroke-width='1'/%3E%3Cpath d='M28 65 L56 81 L56 98 L28 98 L0 98 L0 81 Z' fill='none' stroke='%2322d3ee' stroke-opacity='0.35' stroke-width='1'/%3E%3C/svg%3E");
-      background-size: 56px 98px;
-      animation: hexPulse 5s ease-in-out infinite;
-      pointer-events: none;
-    }
     #splashCanvas {
       position: absolute;
       inset: 0;
@@ -1494,10 +1484,6 @@
       0% { opacity: 0; transform: translateY(24px); }
       100% { opacity: 1; transform: translateY(0); }
     }
-    @keyframes hexPulse {
-      0%, 100% { opacity: 0.25; }
-      50% { opacity: 0.45; }
-    }
     @keyframes splashFlashPulse {
       0% { opacity: 0; }
       30% { opacity: 1; }
@@ -1611,7 +1597,6 @@
             <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
           </div>
         </div>
-        <div class="hex-grid-bg"></div>
         <canvas id="splashCanvas"></canvas>
         <div class="splash-flash" id="splashFlash"></div>
         <div class="splash-content" id="splashContent">
@@ -3360,7 +3345,6 @@ Be brief and direct:
       const c1 = 1.70158, c3 = c1 + 1;
       return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
     }
-    function easeInOutSine(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
     function clamp01(t) { return Math.max(0, Math.min(1, t)); }
 
     function buildShieldShape(THREE) {
@@ -3374,12 +3358,17 @@ Be brief and direct:
     }
 
     function buildWingShape(THREE) {
+      // A swept bird wing: smooth leading edge from the body out to a tapered tip,
+      // scalloped trailing edge (a run of shallow arcs) reading as individual feathers.
       const s = new THREE.Shape();
-      s.moveTo(0, 0);
-      s.bezierCurveTo(0.35, 0.18, 0.75, 0.22, 1.15, 0.12);
-      s.bezierCurveTo(0.85, 0.28, 0.55, 0.3, 0.95, 0.42);
-      s.bezierCurveTo(0.65, 0.44, 0.4, 0.4, 0.7, 0.56);
-      s.bezierCurveTo(0.4, 0.5, 0.15, 0.36, 0, 0.14);
+      s.moveTo(0, 0.02);
+      s.bezierCurveTo(0.22, 0.32, 0.6, 0.48, 1.15, 0.44);
+      s.bezierCurveTo(1.32, 0.43, 1.42, 0.34, 1.4, 0.24);
+      s.bezierCurveTo(1.24, 0.3, 1.1, 0.2, 1.14, 0.1);
+      s.bezierCurveTo(0.98, 0.17, 0.84, 0.06, 0.88, -0.02);
+      s.bezierCurveTo(0.72, 0.06, 0.58, -0.04, 0.62, -0.1);
+      s.bezierCurveTo(0.46, 0.0, 0.32, -0.08, 0.34, -0.12);
+      s.bezierCurveTo(0.2, -0.04, 0.08, -0.08, 0, -0.04);
       s.closePath();
       return s;
     }
@@ -3425,7 +3414,11 @@ Be brief and direct:
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-      camera.position.set(0, 0.15, 5.2);
+      // Pulled back further than the logo's own size requires so it reads as a
+      // compact, centered emblem occupying roughly the upper half of the screen,
+      // leaving clear room below for the title/subtitle/button — not a shape that
+      // fills the frame and has to be shrunk-and-shifted afterward to make space.
+      camera.position.set(0, 0.15, 9);
       camera.lookAt(0, 0.1, 0);
 
       function resize() {
@@ -3463,25 +3456,15 @@ Be brief and direct:
       rod.position.y = 5; // starts above frame, drops in
       group.add(rod);
 
-      // --- Shield: wireframe pulse (from t=0) + gradient fill (revealed later) ---
+      // --- Shield: a thin pulsing wireframe only — a solid gradient fill was tried and
+      // looked heavy/cluttered, so the "protective boundary" is suggested by an outline
+      // that fades away once the caduceus itself is fully formed, not a filled backdrop.
       const shieldShape = buildShieldShape(THREE);
       const shieldPoints = shieldShape.getPoints(40).map(p => new THREE.Vector3(p.x, p.y, -0.35));
       const shieldWireGeo = new THREE.BufferGeometry().setFromPoints(shieldPoints);
       const shieldWire = new THREE.LineLoop(shieldWireGeo, new THREE.LineBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0 }));
       shieldWire.scale.setScalar(1.35);
       group.add(shieldWire);
-
-      const shieldFillGeo = new THREE.ShapeGeometry(shieldShape, 24);
-      gradientVertexColors(THREE, shieldFillGeo, 0x1d4ed8, 0x22d3ee, -1.15, 1.05);
-      // Unlit on purpose: this is a flat gradient backdrop, not a shaded surface — using
-      // MeshStandardMaterial here left it reading as near-black since it faces away from
-      // both rim lights. MeshBasicMaterial shows the navy->cyan vertex gradient directly.
-      const shieldFill = new THREE.Mesh(shieldFillGeo, new THREE.MeshBasicMaterial({
-        vertexColors: true, transparent: true, opacity: 0, side: THREE.DoubleSide
-      }));
-      shieldFill.position.z = -0.35;
-      shieldFill.scale.setScalar(1.35);
-      group.add(shieldFill);
 
       // --- Twin snakes: a helix curve per snake, revealed by growing t=[0,progress] ---
       function makeHelixCurve(turns, phase) {
@@ -3540,7 +3523,7 @@ Be brief and direct:
       // --- Wings ---
       const wingShape = buildWingShape(THREE);
       const wingGeo = new THREE.ExtrudeGeometry(wingShape, { depth: 0.04, bevelEnabled: false });
-      gradientVertexColors(THREE, wingGeo, 0x22d3ee, 0x1e3a8a, 0, 0.6);
+      gradientVertexColors(THREE, wingGeo, 0x22d3ee, 0x1e3a8a, -0.12, 0.48);
       const wingMat = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.55, roughness: 0.3, side: THREE.DoubleSide });
       const wingR = new THREE.Mesh(wingGeo, wingMat);
       wingR.position.set(0.05, ROD_TOP_Y - 0.35, 0);
@@ -3554,14 +3537,13 @@ Be brief and direct:
       const T_ROD_DROP = [0.0, 0.55];
       const T_SNAKE_GROW = [0.45, 2.15];
       const T_SPHERE_POP = [2.15, 2.55];
-      const T_SHIELD_WING = [2.15, 2.9];
-      const T_FLASH = 2.85;
-      const T_SETTLE = [2.95, 3.55];
-      const T_DONE = 3.75;
+      const T_SHIELD_FADE = [2.15, 2.6];
+      const T_WING_POP = [2.3, 2.75];
+      const T_FLASH = 2.7;
+      const INTRO_DONE = T_WING_POP[1];
 
       let flashed = false;
       let revealed = false;
-      let skipped = false;
       const clock = new THREE.Clock();
       let elapsed = 0;
 
@@ -3573,7 +3555,8 @@ Be brief and direct:
         // Rod drop
         const rodT = easeOutCubic(frame(T_ROD_DROP));
         rod.position.y = 5 + (0 - 5) * rodT;
-        shieldWire.material.opacity = 0.55 * clamp01((elapsed - 0.1) / 0.6) * (0.6 + 0.4 * Math.sin(elapsed * 6));
+        shieldWire.material.opacity = 0.55 * clamp01((elapsed - 0.1) / 0.6) * (0.6 + 0.4 * Math.sin(elapsed * 6))
+          * (1 - easeOutCubic(frame(T_SHIELD_FADE)));
 
         // Snakes grow (fast start, decelerate — eased reveal of the helix)
         const snakeT = easeOutCubic(frame(T_SNAKE_GROW));
@@ -3584,14 +3567,17 @@ Be brief and direct:
         const sphereT = easeOutBack(frame(T_SPHERE_POP));
         sphere.scale.setScalar(Math.max(0.0001, sphereT));
 
-        // Shield fill + wings unfold
-        const wingT = easeOutCubic(frame(T_SHIELD_WING));
-        shieldWire.material.opacity *= (1 - wingT);
-        shieldFill.material.opacity = 0.92 * wingT;
-        wingR.scale.x = 0.001 + 0.999 * wingT;
-        wingL.scale.x = -(0.001 + 0.999 * wingT);
+        // Wings pop out fast with a little overshoot (like a bird snapping its wings
+        // open after resting), then settle into a slow continuous flap once fully open.
+        const wingPopT = easeOutBack(frame(T_WING_POP));
+        const popScale = Math.max(0.001, wingPopT);
+        wingR.scale.x = popScale;
+        wingL.scale.x = -popScale;
+        const flap = elapsed >= INTRO_DONE ? Math.sin((elapsed - INTRO_DONE) * 1.8) * 0.12 : 0;
+        wingR.rotation.z = flap;
+        wingL.rotation.z = -flap;
 
-        // Flash pulse once, right as shield/wings complete
+        // Flash pulse once, right as the wings finish popping open
         if (!flashed && elapsed >= T_FLASH) {
           flashed = true;
           if (flashEl) {
@@ -3601,51 +3587,31 @@ Be brief and direct:
           }
         }
 
-        // Settle: scale down + glide up, then reveal title/subtitle/button
-        const settleT = easeInOutSine(frame(T_SETTLE));
-        group.scale.setScalar(1 - 0.42 * settleT);
-        group.position.y = 1.35 * settleT;
-
-        if (!revealed && elapsed >= T_SETTLE[1] - 0.15) {
+        if (!revealed && elapsed >= INTRO_DONE) {
           revealed = true;
           revealContent();
         }
 
-        // Gentle idle parallax once fully formed
-        group.rotation.y = Math.sin(elapsed * 0.4) * 0.08;
+        // Idle: the finished logo stays centered (no repositioning) and slowly
+        // rotates in place — a real 3D turntable, not a flat sway.
+        if (elapsed >= INTRO_DONE) {
+          group.rotation.y = (elapsed - INTRO_DONE) * 0.5;
+        }
       }
 
       function skipToEnd() {
-        if (skipped) return;
-        skipped = true;
-        updateSnake(snakeA, 1);
-        updateSnake(snakeB, 1);
-        sphere.scale.setScalar(1);
-        shieldWire.material.opacity = 0;
-        shieldFill.material.opacity = 0.92;
-        wingR.scale.x = 1; wingL.scale.x = -1;
-        rod.position.y = 0;
-        group.scale.setScalar(0.58);
-        group.position.y = 1.35;
-        renderer.render(scene, camera);
-        revealContent();
+        if (elapsed >= INTRO_DONE) return;
+        elapsed = INTRO_DONE;
       }
       canvas.addEventListener('click', skipToEnd);
 
-      let rafId;
       function tick() {
-        if (skipped) return;
         elapsed += clock.getDelta();
         renderAtElapsed();
         renderer.render(scene, camera);
-        if (elapsed < T_DONE + 2) {
-          rafId = requestAnimationFrame(tick);
-        } else {
-          // keep a very light idle render loop for the parallax sway
-          rafId = requestAnimationFrame(tick);
-        }
+        requestAnimationFrame(tick);
       }
-      rafId = requestAnimationFrame(tick);
+      requestAnimationFrame(tick);
     }
 
     document.addEventListener('DOMContentLoaded', function() {
