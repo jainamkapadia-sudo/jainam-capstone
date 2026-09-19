@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aegis - Second Opinion Health App Preview</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <style>
@@ -161,21 +161,20 @@
     }
     .splash-content.revealed { opacity: 1; pointer-events: auto; }
     .splash-title-3d {
-      font-size: 40px;
+      font-family: 'Poppins', 'Inter', sans-serif;
+      font-size: 38px;
       font-weight: 800;
-      letter-spacing: 2px;
-      margin-bottom: 8px;
-      background: linear-gradient(90deg, #67e8f9, #22d3ee, #0ea5e9);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      filter: drop-shadow(0 0 18px rgba(34,211,238,0.45));
+      letter-spacing: 1.5px;
+      margin-bottom: 10px;
+      color: #eaf6f8;
     }
     .splash-content.revealed .splash-title-3d { animation: splashFadeUp 0.6s ease-out both; }
     .splash-subtitle-3d {
-      color: rgba(226,247,253,0.75);
-      font-size: 14px;
-      letter-spacing: 0.3px;
+      font-family: 'Inter', sans-serif;
+      color: rgba(226,247,253,0.6);
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.4px;
       margin-bottom: 32px;
     }
     .splash-content.revealed .splash-subtitle-3d { animation: splashFadeUp 0.6s 0.15s ease-out both; }
@@ -184,13 +183,14 @@
       padding: 16px;
       border: none;
       border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
       font-size: 15px;
       font-weight: 700;
       letter-spacing: 0.5px;
       cursor: pointer;
-      color: #04222b;
-      background: linear-gradient(90deg, #67e8f9, #22d3ee);
-      box-shadow: 0 0 24px rgba(34,211,238,0.55), 0 8px 20px rgba(0,0,0,0.3);
+      color: #ffffff;
+      background: #0d9488;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
       transition: transform 0.15s;
     }
     .splash-btn-3d:active { transform: scale(0.97); }
@@ -3347,6 +3347,119 @@ Be brief and direct:
     }
     function clamp01(t) { return Math.max(0, Math.min(1, t)); }
 
+    // Procedural canvas textures — flat MeshStandardMaterial colors read as plain
+    // plastic; painting light/dark detail directly into a texture (scales, feather
+    // barbs) sells "detailed and textured" without needing external image assets.
+    const SNAKE_SCALE_W = 34, SNAKE_SCALE_H = 24;
+
+    function drawScaleGrid(ctx, w, h, paintScale) {
+      for (let row = -1; row * SNAKE_SCALE_H < h + SNAKE_SCALE_H; row++) {
+        const offsetX = (row % 2) ? SNAKE_SCALE_W / 2 : 0;
+        for (let col = -1; col * SNAKE_SCALE_W < w + SNAKE_SCALE_W; col++) {
+          const cx = col * SNAKE_SCALE_W + offsetX + SNAKE_SCALE_W / 2;
+          const cy = row * SNAKE_SCALE_H + SNAKE_SCALE_H / 2;
+          paintScale(cx, cy, row, col);
+        }
+      }
+    }
+
+    function makeSnakeScaleTexture(THREE, colorHex) {
+      // Bigger, higher-contrast scales than the first attempt — that version used
+      // small (18x13) low-contrast scales tiled densely, which just blurred into a
+      // flat color at the size this actually renders at. Fewer, bolder scales read
+      // clearly even small; the bump map below is what really sells the relief.
+      const w = 128, h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const base = new THREE.Color(colorHex);
+      ctx.fillStyle = '#' + base.getHexString();
+      ctx.fillRect(0, 0, w, h);
+      const light = base.clone().lerp(new THREE.Color(0xffffff), 0.45);
+      const dark = base.clone().lerp(new THREE.Color(0x000000), 0.55);
+      drawScaleGrid(ctx, w, h, (cx, cy, row, col) => {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, SNAKE_SCALE_W / 2 - 1.5, SNAKE_SCALE_H / 2 - 1.5, 0, Math.PI, 0);
+        ctx.closePath();
+        ctx.fillStyle = '#' + ((row + col) % 2 === 0 ? light : dark).getHexString();
+        ctx.globalAlpha = 0.6;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      });
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 7);
+      return tex;
+    }
+
+    function makeSnakeBumpTexture(THREE) {
+      // A real bump map (not just painted color) so each scale actually catches
+      // light as a small raised dome — this is what makes the texture visible as
+      // physical relief rather than a flat printed pattern.
+      const w = 128, h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#808080';
+      ctx.fillRect(0, 0, w, h);
+      drawScaleGrid(ctx, w, h, (cx, cy) => {
+        const r = SNAKE_SCALE_W / 2 - 1.5;
+        const grad = ctx.createRadialGradient(cx, cy - r * 0.3, 1, cx, cy, r);
+        grad.addColorStop(0, '#f2f2f2');
+        grad.addColorStop(1, '#2a2a2a');
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, r, SNAKE_SCALE_H / 2 - 1.5, 0, Math.PI, 0);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+      });
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 7);
+      return tex;
+    }
+
+    function drawFeatherBarbs(ctx, w, h, shaftStyle, shaftWidth, barbStyle, barbWidth) {
+      ctx.strokeStyle = shaftStyle;
+      ctx.lineWidth = shaftWidth;
+      ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
+      ctx.strokeStyle = barbStyle;
+      ctx.lineWidth = barbWidth;
+      for (let y = 6; y < h; y += 9) {
+        const reach = 14 + (y / h) * 12;
+        ctx.beginPath(); ctx.moveTo(w / 2, y); ctx.lineTo(w / 2 - reach, y - reach * 0.75); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(w / 2, y); ctx.lineTo(w / 2 + reach, y - reach * 0.75); ctx.stroke();
+      }
+    }
+
+    function makeFeatherTexture(THREE, colorHex) {
+      const w = 128, h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const base = new THREE.Color(colorHex);
+      ctx.fillStyle = '#' + base.getHexString();
+      ctx.fillRect(0, 0, w, h);
+      drawFeatherBarbs(ctx, w, h, 'rgba(0,0,0,0.55)', 4, 'rgba(0,0,0,0.35)', 2);
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    function makeFeatherBumpTexture(THREE) {
+      const w = 128, h = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#808080';
+      ctx.fillRect(0, 0, w, h);
+      drawFeatherBarbs(ctx, w, h, '#dadada', 3, '#3a3a3a', 2.2);
+      return new THREE.CanvasTexture(canvas);
+    }
+
     function buildShieldShape(THREE) {
       const s = new THREE.Shape();
       s.moveTo(0, 1.05);
@@ -3373,7 +3486,16 @@ Be brief and direct:
       // the first attempt used thin length:width ~10:1 blades spread wide apart, which
       // read as spiky rays instead of a solid wing silhouette like the reference image.
       const wing = new THREE.Group();
-      const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.45, roughness: 0.35, side: THREE.DoubleSide });
+      // Low metalness on purpose: with no environment map for reflections, a
+      // moderately metallic MeshStandardMaterial derives little of its look from
+      // the diffuse map (PBR conductors are mostly specular), so the feather
+      // texture was barely visible at metalness 0.35 — this also happens to be
+      // the matte look asked for, not just the texture-visibility fix.
+      const mat = new THREE.MeshStandardMaterial({
+        map: makeFeatherTexture(THREE, color),
+        bumpMap: makeFeatherBumpTexture(THREE), bumpScale: 0.045,
+        metalness: 0.1, roughness: 0.6, side: THREE.DoubleSide
+      });
       const FEATHER_COUNT = 5;
       for (let i = 0; i < FEATHER_COUNT; i++) {
         const t = i / (FEATHER_COUNT - 1); // 0 = topmost/longest feather, 1 = bottommost/shortest
@@ -3453,6 +3575,7 @@ Be brief and direct:
       scene.add(blueRim);
 
       const group = new THREE.Group();
+      group.position.y = 0.55; // nudge the whole emblem up within the frame
       scene.add(group);
 
       const ROD_HALF = 1.6;
@@ -3499,8 +3622,15 @@ Be brief and direct:
       const snakeA = { curve: makeHelixCurve(2.6, 0), color: SNAKE_COLOR, mesh: null };
       const snakeB = { curve: makeHelixCurve(2.6, Math.PI), color: SNAKE_COLOR, mesh: null };
       [snakeA, snakeB].forEach(s => {
+        // Same reasoning as the wing material: lower metalness so the scale map
+        // and bump relief actually show, instead of being drowned out by
+        // specular response with no environment map to reflect. emissiveIntensity
+        // dropped hard too — emissive isn't modulated by `map`, so it was adding a
+        // flat, uniform glow on top that washed out the scale contrast entirely.
         s.material = new THREE.MeshStandardMaterial({
-          color: s.color, emissive: s.color, emissiveIntensity: 0.9, metalness: 0.35, roughness: 0.4
+          map: makeSnakeScaleTexture(THREE, s.color),
+          bumpMap: makeSnakeBumpTexture(THREE), bumpScale: 0.05,
+          emissive: s.color, emissiveIntensity: 0.08, metalness: 0.1, roughness: 0.55
         });
         // A small elongated head + two eye dots at the growing tip — a plain-radius
         // tube alone reads as a cable, not a snake; the head is what sells it.
