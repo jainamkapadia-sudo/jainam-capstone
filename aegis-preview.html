@@ -3347,6 +3347,42 @@ Be brief and direct:
     }
     function clamp01(t) { return Math.max(0, Math.min(1, t)); }
 
+    // No external HDR file is available, so this paints a simple 6-face studio
+    // environment (a dark gradient per face plus a couple of bright "softbox"
+    // rectangles) and runs it through PMREMGenerator — the standard way to give
+    // PBR materials real reflections/highlights without a real HDR asset. Applied
+    // via scene.environment so every metallic material benefits at once.
+    function makeStudioEnvironment(THREE, renderer) {
+      const size = 128;
+      function face(draw) {
+        const c = document.createElement('canvas');
+        c.width = size; c.height = size;
+        const ctx = c.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 0, size);
+        grad.addColorStop(0, '#1b2735');
+        grad.addColorStop(1, '#05080c');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, size, size);
+        if (draw) draw(ctx);
+        return c;
+      }
+      const softbox = (ctx, x, y, w, h, color) => { ctx.fillStyle = color; ctx.fillRect(x, y, w, h); };
+      const faces = [
+        face(ctx => softbox(ctx, 15, 25, 55, 75, '#9fb6c9')),
+        face(ctx => softbox(ctx, 55, 15, 50, 65, '#93a8bd')),
+        face(null),
+        face(null),
+        face(ctx => softbox(ctx, 30, 35, 65, 55, '#a8bdd0')),
+        face(null)
+      ];
+      const cubeTex = new THREE.CubeTexture(faces);
+      cubeTex.needsUpdate = true;
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      const envRT = pmrem.fromCubemap(cubeTex);
+      pmrem.dispose();
+      return envRT.texture;
+    }
+
     // Procedural canvas textures — flat MeshStandardMaterial colors read as plain
     // plastic; painting light/dark detail directly into a texture (scales, feather
     // barbs) sells "detailed and textured" without needing external image assets.
@@ -3363,11 +3399,56 @@ Be brief and direct:
       }
     }
 
+    // Blackened, forged-iron rod: a mottled/streaked pattern for both a subtle color
+    // map (tonal variation, not a flat single gray) and a bump map (real wear/scratch
+    // relief), instead of the smooth uniform chrome-like cylinder from before.
+    function makeMetalWearTexture(THREE, isBump) {
+      const w = 64, h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = isBump ? '#808080' : '#26262a';
+      ctx.fillRect(0, 0, w, h);
+      const blotches = 90;
+      for (let i = 0; i < blotches; i++) {
+        const x = Math.random() * w, y = Math.random() * h;
+        const r = 3 + Math.random() * 10;
+        const lighter = Math.random() > 0.5;
+        ctx.beginPath();
+        ctx.ellipse(x, y, r, r * (0.4 + Math.random() * 0.5), Math.random() * Math.PI, 0, Math.PI * 2);
+        ctx.fillStyle = isBump
+          ? (lighter ? 'rgba(200,200,200,0.35)' : 'rgba(60,60,60,0.35)')
+          : (lighter ? 'rgba(90,90,95,0.3)' : 'rgba(10,10,12,0.35)');
+        ctx.fill();
+      }
+      // A few longer vertical scratch streaks
+      ctx.strokeStyle = isBump ? 'rgba(230,230,230,0.4)' : 'rgba(120,120,125,0.25)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 18; i++) {
+        const x = Math.random() * w;
+        const y0 = Math.random() * h;
+        ctx.beginPath();
+        ctx.moveTo(x, y0);
+        ctx.lineTo(x + (Math.random() - 0.5) * 6, y0 + 15 + Math.random() * 40);
+        ctx.stroke();
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 6);
+      return tex;
+    }
+
     function makeSnakeScaleTexture(THREE, colorHex) {
       // Bigger, higher-contrast scales than the first attempt — that version used
       // small (18x13) low-contrast scales tiled densely, which just blurred into a
       // flat color at the size this actually renders at. Fewer, bolder scales read
       // clearly even small; the bump map below is what really sells the relief.
+      //
+      // Each scale also gets a random hue pick between a blue-green tone and a
+      // bronze/warm tone (not just a light/dark checker of one hue) — an
+      // "iridescent, some blue-green, some bronze" look instead of flat single-tone
+      // scales.
       const w = 128, h = 256;
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
@@ -3375,14 +3456,17 @@ Be brief and direct:
       const base = new THREE.Color(colorHex);
       ctx.fillStyle = '#' + base.getHexString();
       ctx.fillRect(0, 0, w, h);
-      const light = base.clone().lerp(new THREE.Color(0xffffff), 0.45);
-      const dark = base.clone().lerp(new THREE.Color(0x000000), 0.55);
+      const blueGreen = base.clone().lerp(new THREE.Color(0x0d9488), 0.6);
+      const bronze = base.clone().lerp(new THREE.Color(0x8a6a2e), 0.55);
+      const light = base.clone().lerp(new THREE.Color(0xffffff), 0.4);
       drawScaleGrid(ctx, w, h, (cx, cy, row, col) => {
         ctx.beginPath();
         ctx.ellipse(cx, cy, SNAKE_SCALE_W / 2 - 1.5, SNAKE_SCALE_H / 2 - 1.5, 0, Math.PI, 0);
         ctx.closePath();
-        ctx.fillStyle = '#' + ((row + col) % 2 === 0 ? light : dark).getHexString();
-        ctx.globalAlpha = 0.6;
+        const roll = Math.random();
+        const tone = roll < 0.4 ? blueGreen : roll < 0.75 ? bronze : light;
+        ctx.fillStyle = '#' + tone.getHexString();
+        ctx.globalAlpha = 0.55;
         ctx.fill();
         ctx.globalAlpha = 1;
         ctx.strokeStyle = 'rgba(0,0,0,0.5)';
@@ -3704,15 +3788,25 @@ Be brief and direct:
       window.addEventListener('resize', resize);
       resize();
 
-      // Lighting — cyan/blue rim lights read as "glossy metallic" without full PBR/bloom.
-      scene.add(new THREE.AmbientLight(0x1e3a5f, 0.7));
-      const keyLight = new THREE.DirectionalLight(0x9fe8ff, 1.3);
-      keyLight.position.set(1.5, 2.5, 3);
+      // A procedural studio-style environment (no external HDR file available) so
+      // metallic/glossy materials — the hematite sphere especially — actually
+      // reflect something instead of just responding to point lights. This is what
+      // real "glossy, reflects a complex environment" requires for a PBR material;
+      // without it, high-metalness surfaces just look flat and dark.
+      scene.environment = makeStudioEnvironment(THREE, renderer);
+
+      // Lighting: harder contrast than the original softer setup — a single strong
+      // key light plus dim ambient reads as "dramatic studio photography" (sharp
+      // highlights, real shadow falloff) rather than the flatter, evenly-lit look
+      // of the earlier low-contrast version.
+      scene.add(new THREE.AmbientLight(0x0f1a26, 0.35));
+      const keyLight = new THREE.DirectionalLight(0xfff4e0, 1.5);
+      keyLight.position.set(2, 3, 3.5);
       scene.add(keyLight);
-      const tealRim = new THREE.PointLight(0x14b8a6, 2.2, 12);
+      const tealRim = new THREE.PointLight(0x14b8a6, 1.4, 12);
       tealRim.position.set(-2, -1, 2);
       scene.add(tealRim);
-      const blueRim = new THREE.PointLight(0x2563eb, 1.6, 12);
+      const blueRim = new THREE.PointLight(0x2563eb, 1.0, 12);
       blueRim.position.set(2, 1.5, 1.5);
       scene.add(blueRim);
 
@@ -3724,7 +3818,15 @@ Be brief and direct:
       const ROD_BOTTOM_Y = -ROD_HALF, ROD_TOP_Y = ROD_HALF;
 
       // --- Rod ---
-      const rodMat = new THREE.MeshStandardMaterial({ color: 0xe6edf3, metalness: 0.9, roughness: 0.28 });
+      // Dark blackened-iron, not polished chrome: darker base color, higher
+      // roughness (forged/worn metal isn't mirror-smooth), and the wear texture
+      // above for real tonal variation and scratch relief instead of a flat tint.
+      const rodMat = new THREE.MeshStandardMaterial({
+        color: 0x2e2e33,
+        map: makeMetalWearTexture(THREE, false),
+        bumpMap: makeMetalWearTexture(THREE, true), bumpScale: 0.02,
+        metalness: 0.85, roughness: 0.55
+      });
       const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, ROD_HALF * 2, 20), rodMat);
       rod.position.y = 5; // starts above frame, drops in
       group.add(rod);
@@ -3843,17 +3945,27 @@ Be brief and direct:
         s.head.visible = headScale > 0.001;
       }
 
-      // --- Sphere cap ---
+      // --- Sphere cap: dark, glossy hematite — relies on scene.environment (set
+      // above) for the actual reflections; without an envMap this would just look
+      // like flat dark plastic regardless of how low the roughness is.
       const sphere = new THREE.Mesh(
-        new THREE.SphereGeometry(0.17, 24, 24),
-        new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.7, roughness: 0.18 })
+        new THREE.SphereGeometry(0.17, 32, 32),
+        new THREE.MeshStandardMaterial({ color: 0x16161a, metalness: 0.85, roughness: 0.12, envMapIntensity: 1.4 })
       );
       sphere.position.y = ROD_TOP_Y + 0.08;
       sphere.scale.setScalar(0.0001);
       group.add(sphere);
 
       // --- Wings: a fan of individual feathers per side, not one solid silhouette ---
-      const WING_COLOR = 0x22d3ee;
+      // Natural raptor blue-brown instead of bright brand cyan — matches "rich,
+      // natural blue-brown" feathers rather than a glowing sci-fi accent color.
+      // A slate-blue base washed out to pale gray once the environment map + full
+      // light rig were added (mid-value colors read as near-white once enough
+      // light sources stack on a fairly diffuse/rough material). A darker, warmer
+      // brown base holds its own identity under the same lighting, and the
+      // existing teal/blue rim lights naturally cast cool color into the shadow
+      // side — a real blue+brown duotone from lighting, not just the flat albedo.
+      const WING_COLOR = 0x3d2f1f;
       const wingR = buildWingGroup(THREE, WING_COLOR);
       wingR.position.set(0.05, ROD_TOP_Y - 0.35, 0);
       wingR.scale.set(0.001, 1, 1);
