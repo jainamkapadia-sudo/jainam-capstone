@@ -3424,6 +3424,148 @@ Be brief and direct:
       return tex;
     }
 
+    // Irregular polygon "plates" (jittered grid cells) for the head — real snake
+    // heads have larger, irregular scutes distinct from the small uniform body
+    // scales, which is a lot of what makes a head read as a head in the reference
+    // photo rather than more of the same body texture.
+    function drawHeadPlates(ctx, w, h, paint) {
+      const cols = 7, rows = 7;
+      const cellW = w / cols, cellH = h / rows;
+      const pts = [];
+      for (let r = 0; r <= rows; r++) {
+        pts[r] = [];
+        for (let c = 0; c <= cols; c++) {
+          const edge = (r === 0 || r === rows || c === 0 || c === cols);
+          const jitter = edge ? 0.15 : 0.5;
+          pts[r][c] = [
+            c * cellW + (Math.random() - 0.5) * cellW * jitter,
+            r * cellH + (Math.random() - 0.5) * cellH * jitter
+          ];
+        }
+      }
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const p0 = pts[r][c], p1 = pts[r][c + 1], p2 = pts[r + 1][c + 1], p3 = pts[r + 1][c];
+          paint(p0, p1, p2, p3, r, c);
+        }
+      }
+    }
+
+    function makeSnakeHeadTexture(THREE, colorHex) {
+      const w = 256, h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const base = new THREE.Color(colorHex);
+      const pale = base.clone().lerp(new THREE.Color(0xf5f4f0), 0.65);
+      ctx.fillStyle = '#' + pale.getHexString();
+      ctx.fillRect(0, 0, w, h);
+      const light = pale.clone().lerp(new THREE.Color(0xffffff), 0.35);
+      const dark = pale.clone().lerp(new THREE.Color(0x000000), 0.3);
+      drawHeadPlates(ctx, w, h, (p0, p1, p2, p3, r, c) => {
+        ctx.beginPath();
+        ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.lineTo(p3[0], p3[1]);
+        ctx.closePath();
+        ctx.fillStyle = '#' + ((r + c) % 2 === 0 ? light : dark).getHexString();
+        ctx.globalAlpha = 0.55;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = 'rgba(15,15,15,0.55)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      });
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    function makeSnakeHeadBumpTexture(THREE) {
+      const w = 256, h = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#808080';
+      ctx.fillRect(0, 0, w, h);
+      drawHeadPlates(ctx, w, h, (p0, p1, p2, p3) => {
+        const cx = (p0[0] + p1[0] + p2[0] + p3[0]) / 4, cy = (p0[1] + p1[1] + p2[1] + p3[1]) / 4;
+        const r = Math.max(8, (Math.hypot(p2[0] - p0[0], p2[1] - p0[1])) / 2);
+        const grad = ctx.createRadialGradient(cx, cy - r * 0.25, 1, cx, cy, r);
+        grad.addColorStop(0, '#e8e8e8');
+        grad.addColorStop(1, '#383838');
+        ctx.beginPath();
+        ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.lineTo(p3[0], p3[1]);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+      });
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    function makeSnakeEyeTexture(THREE) {
+      // A gold/amber iris with a vertical slit pupil, like the reference photo —
+      // unlit (MeshBasicMaterial) so it reads clearly regardless of lighting angle.
+      const size = 64;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const cx = size / 2, cy = size / 2;
+      ctx.fillStyle = '#1a1408';
+      ctx.fillRect(0, 0, size, size);
+      const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, size / 2 - 2);
+      grad.addColorStop(0, '#f3d94a');
+      grad.addColorStop(0.55, '#c99a1e');
+      grad.addColorStop(1, '#5c4712');
+      ctx.beginPath(); ctx.arc(cx, cy, size / 2 - 3, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+      ctx.fillStyle = '#0a0805';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, size * 0.075, size * 0.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    // TubeGeometry only takes one constant radius for its whole length — a real
+    // snake body tapers (thin near the head/tail, thicker mid-body), so this
+    // manually builds tube rings using Frenet frames, with per-ring radius from
+    // radiusFn(t), the same way TubeGeometry does internally minus the constant-
+    // radius limitation.
+    function buildTaperedTubeGeometry(THREE, curve, tubularSegments, radialSegments, radiusFn) {
+      const frames = curve.computeFrenetFrames(tubularSegments, false);
+      const positions = [], normals = [], uvs = [], indices = [];
+
+      for (let i = 0; i <= tubularSegments; i++) {
+        const t = i / tubularSegments;
+        const point = curve.getPoint(t);
+        const normal = frames.normals[i];
+        const binormal = frames.binormals[i];
+        const r = radiusFn(t);
+        for (let j = 0; j <= radialSegments; j++) {
+          const v = (j / radialSegments) * Math.PI * 2;
+          const sin = Math.sin(v), cos = -Math.cos(v);
+          const nx = cos * normal.x + sin * binormal.x;
+          const ny = cos * normal.y + sin * binormal.y;
+          const nz = cos * normal.z + sin * binormal.z;
+          positions.push(point.x + r * nx, point.y + r * ny, point.z + r * nz);
+          normals.push(nx, ny, nz);
+          uvs.push(i / tubularSegments, j / radialSegments);
+        }
+      }
+
+      for (let i = 1; i <= tubularSegments; i++) {
+        for (let j = 1; j <= radialSegments; j++) {
+          const a = (radialSegments + 1) * (i - 1) + (j - 1);
+          const b = (radialSegments + 1) * i + (j - 1);
+          const c = (radialSegments + 1) * i + j;
+          const d = (radialSegments + 1) * (i - 1) + j;
+          indices.push(a, b, d, b, c, d);
+        }
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setIndex(indices);
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      return geo;
+    }
+
     function drawFeatherBarbs(ctx, w, h, shaftStyle, shaftWidth, barbStyle, barbWidth) {
       ctx.strokeStyle = shaftStyle;
       ctx.lineWidth = shaftWidth;
@@ -3632,21 +3774,45 @@ Be brief and direct:
           bumpMap: makeSnakeBumpTexture(THREE), bumpScale: 0.05,
           emissive: s.color, emissiveIntensity: 0.08, metalness: 0.1, roughness: 0.55
         });
-        // A small elongated head + two eye dots at the growing tip — a plain-radius
-        // tube alone reads as a cable, not a snake; the head is what sells it.
+        // Head gets its OWN material — real snake heads have larger, irregular
+        // plates distinct from the small uniform body scales, plus a textured
+        // gold-iris eye instead of a flat color dot.
+        s.headMaterial = new THREE.MeshStandardMaterial({
+          map: makeSnakeHeadTexture(THREE, s.color),
+          bumpMap: makeSnakeHeadBumpTexture(THREE), bumpScale: 0.09,
+          metalness: 0.1, roughness: 0.5
+        });
         s.head = new THREE.Group();
-        // Noticeably wider than the 0.085-radius tube so it actually reads as a head
-        // bulge rather than blending into the tube it's attached to.
-        const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 16), s.material);
-        headMesh.scale.set(1, 0.75, 1.4);
-        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.2 });
-        const eyeGeo = new THREE.SphereGeometry(0.03, 8, 8);
-        const eyeL = new THREE.Mesh(eyeGeo, eyeMat); eyeL.position.set(0.09, 0.03, 0.14);
-        const eyeR = new THREE.Mesh(eyeGeo, eyeMat); eyeR.position.set(-0.09, 0.03, 0.14);
+        // Noticeably wider than the tube's max body radius so it actually reads as
+        // a head bulge rather than blending into the neck it's attached to.
+        const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.17, 20, 20), s.headMaterial);
+        headMesh.scale.set(1, 0.75, 1.5);
+        // headMesh is a sphere(radius 0.17) scaled (1, 0.75, 1.5), i.e. an ellipsoid
+        // with semi-axes (0.17, 0.1275, 0.255). At x=0.1, y=0.03 the ellipsoid's own
+        // surface sits at z ~= 0.197 — the first version placed the eyes at z=0.12,
+        // *inside* that surface, so they were fully hidden behind the solid head.
+        const eyeMat = new THREE.MeshBasicMaterial({ map: makeSnakeEyeTexture(THREE) });
+        const eyeGeo = new THREE.CircleGeometry(0.06, 16);
+        const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+        eyeL.position.set(0.1, 0.03, 0.21);
+        eyeL.rotation.y = Math.PI / 2.3;
+        const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+        eyeR.position.set(-0.1, 0.03, 0.21);
+        eyeR.rotation.y = -Math.PI / 2.3;
         s.head.add(headMesh, eyeL, eyeR);
         s.head.visible = false;
         group.add(s.head);
       });
+
+      // Real snakes taper — thin near the head/tail, thicker through the mid-body —
+      // instead of a uniform-diameter pipe. tGlobal is this point's position along
+      // the FULL final body (0=tail tip, 1=head), independent of how much has grown
+      // in so far, so the taper profile stays consistent as the snake grows rather
+      // than being re-stretched over whatever's currently visible.
+      function snakeBodyRadius(tGlobal) {
+        const taper = Math.sin(Math.PI * clamp01(tGlobal));
+        return 0.045 + 0.055 * taper;
+      }
 
       function updateSnake(s, progress) {
         if (progress <= 0.001) {
@@ -3656,7 +3822,7 @@ Be brief and direct:
         }
         const curve = wrappedCurve(s.curve, progress);
         const segments = Math.max(8, Math.round(64 * progress));
-        const geo = new THREE.TubeGeometry(curve, segments, 0.085, 8, false);
+        const geo = buildTaperedTubeGeometry(THREE, curve, segments, 10, (tLocal) => snakeBodyRadius(tLocal * progress));
         if (s.mesh) {
           s.mesh.geometry.dispose();
           s.mesh.geometry = geo;
