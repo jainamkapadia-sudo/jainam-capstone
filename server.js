@@ -285,7 +285,25 @@ function parseBody(req) {
   });
 }
 
+const ASSET_CONTENT_TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml' };
+
 const server = http.createServer(async (req, res) => {
+  // Static assets (logo images, etc.) — served straight from disk. Path is
+  // restricted to the assets/ directory and re-resolved to guard against ../ traversal.
+  if (req.method === 'GET' && req.url.startsWith('/assets/')) {
+    const requested = path.normalize(path.join(__dirname, req.url));
+    const assetsRoot = path.join(__dirname, 'assets');
+    if (requested.startsWith(assetsRoot) && fs.existsSync(requested)) {
+      const ext = path.extname(requested).toLowerCase();
+      res.writeHead(200, { 'Content-Type': ASSET_CONTENT_TYPES[ext] || 'application/octet-stream' });
+      res.end(fs.readFileSync(requested));
+    } else {
+      res.writeHead(404);
+      res.end('Not found');
+    }
+    return;
+  }
+
   // API: Proxy AI calls — keeps GEMINI_API_KEY/GROK_API_KEY server-side only, never
   // sent to the browser. Route name kept as /api/gemini for compatibility with the
   // existing client; which provider actually handles it is chosen by AI_PROVIDER.

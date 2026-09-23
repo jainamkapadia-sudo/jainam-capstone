@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aegis - Second Opinion Health App Preview</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -33,7 +33,7 @@
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'General Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%);
       min-height: 100vh;
       display: flex;
@@ -114,87 +114,620 @@
     .status-icons { display: flex; gap: 5px; align-items: center; margin-top: 4px; }
     .status-icons svg { width: 15px; height: 15px; }
 
-    /* ============ SPLASH (3D animated) ============ */
+    /* ============ SPLASH (50/50 image + text, 2s entrance) ============ */
     .splash-screen {
-      background:
-        radial-gradient(ellipse at 30% 20%, rgba(34,211,238,0.18) 0%, transparent 55%),
-        linear-gradient(160deg, #071233 0%, #0b1f4d 45%, #083344 78%, #0891b2 130%);
-      justify-content: flex-end;
-      align-items: center;
-      text-align: center;
-      padding: 40px 32px 56px;
+      background: #ffffff;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      padding: 0;
       position: relative;
       overflow: hidden;
       height: 100%;
     }
     .splash-screen .status-bar {
-      color: rgba(255,255,255,0.8);
+      color: rgba(15,23,42,0.7);
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       z-index: 3;
     }
-    #splashCanvas {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
+    .splash-logo-half {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      opacity: 0;
+      animation: splashLogoFade 2s ease-in-out forwards;
+    }
+    .splash-logo-half img {
       width: 100%;
-      height: 100%;
-      display: block;
+      max-width: 320px;
+      object-fit: contain;
     }
-    .splash-flash {
-      position: absolute;
-      inset: 0;
-      z-index: 2;
-      background: radial-gradient(circle at 50% 42%, rgba(255,255,255,0.9) 0%, rgba(103,232,249,0.5) 30%, transparent 70%);
-      opacity: 0;
-      pointer-events: none;
+    .splash-text-half {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8px 32px 0;
     }
-    .splash-flash.flash-active { animation: splashFlashPulse 0.9s ease-out; }
-    .splash-content {
-      position: relative;
-      z-index: 3;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-    }
-    .splash-content.revealed { opacity: 1; pointer-events: auto; }
     .splash-title-3d {
-      font-family: 'Poppins', 'Inter', sans-serif;
+      font-family: 'Outfit', 'Plus Jakarta Sans', 'Poppins', sans-serif;
       font-size: 38px;
-      font-weight: 800;
+      font-weight: 700;
       letter-spacing: 1.5px;
       margin-bottom: 10px;
-      color: #eaf6f8;
+      color: #030712;
+      opacity: 0;
+      transform: translateY(28px);
+      animation: splashFadeUp 2s 0.1s ease-in-out forwards;
     }
-    .splash-content.revealed .splash-title-3d { animation: splashFadeUp 0.6s ease-out both; }
     .splash-subtitle-3d {
-      font-family: 'Inter', sans-serif;
-      color: rgba(226,247,253,0.6);
+      font-family: 'General Sans', 'Inter', sans-serif;
+      color: #047857;
       font-size: 13px;
-      font-weight: 400;
+      font-weight: 500;
       letter-spacing: 0.4px;
       margin-bottom: 32px;
+      opacity: 0;
+      transform: translateY(28px);
+      animation: splashFadeUp 2s 0.2s ease-in-out forwards;
     }
-    .splash-content.revealed .splash-subtitle-3d { animation: splashFadeUp 0.6s 0.15s ease-out both; }
+    .splash-btn-wrap {
+      width: 100%;
+      opacity: 0;
+      transform: translateY(28px);
+      animation: splashFadeUp 2s 0.3s ease-in-out forwards;
+    }
     .splash-btn-3d {
       width: 100%;
-      padding: 16px;
+      padding: 18px;
       border: none;
-      border-radius: var(--radius);
-      font-family: 'Inter', sans-serif;
-      font-size: 15px;
+      border-radius: 30px;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 16px;
       font-weight: 700;
       letter-spacing: 0.5px;
       cursor: pointer;
       color: #ffffff;
-      background: #0d9488;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-      transition: transform 0.15s;
+      background: linear-gradient(135deg, #14b8a6, #047857);
+      background-size: 150% 150%;
+      background-position: 0% 50%;
+      box-shadow: 0 4px 12px rgba(5,150,105,0.28);
+      transition: transform 0.25s ease, box-shadow 0.25s ease, background-position 0.4s ease;
+    }
+    .splash-btn-3d:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 8px 20px rgba(5,150,105,0.4);
+      background-position: 100% 50%;
     }
     .splash-btn-3d:active { transform: scale(0.97); }
-    .splash-content.revealed .splash-btn-3d { animation: splashFadeUp 0.6s 0.3s ease-out both; }
+    .splash-login-line {
+      margin-top: 16px;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 13px;
+      color: rgba(15,23,42,0.5);
+    }
+    .splash-login-link {
+      background: none;
+      border: none;
+      padding: 0;
+      margin-left: 4px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      color: #047857;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      transition: color 0.15s;
+    }
+    .splash-login-link:hover { color: #065f46; }
+
+    /* ============ ONBOARDING (shared) ============ */
+    .onb-screen { background: var(--card); flex-direction: column; height: 100%; }
+    .onb-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 52px 20px 12px;
+      min-height: 48px;
+    }
+    .onb-back-btn, .onb-skip-btn {
+      min-height: 48px;
+      min-width: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-primary);
+      font-family: 'General Sans', 'Inter', sans-serif;
+    }
+    .onb-back-btn svg { width: 22px; height: 22px; }
+    .onb-skip-btn {
+      width: auto;
+      padding: 0 8px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .onb-progress-track {
+      flex: 1;
+      display: flex;
+      gap: 6px;
+      margin: 0 16px;
+    }
+    .onb-progress-seg {
+      flex: 1;
+      height: 5px;
+      border-radius: 3px;
+      background: #94A3B8;
+      overflow: hidden;
+    }
+    .onb-progress-seg-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--primary);
+      border-radius: 3px;
+      transition: width 0.4s cubic-bezier(0.22,1,0.36,1);
+    }
+    .onb-body { flex: 1; overflow-y: auto; padding: 8px 24px 24px; }
+    .onb-title {
+      font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      color: #0F172A;
+      margin-bottom: 8px;
+      letter-spacing: 0.2px;
+    }
+    .onb-subtitle {
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: #1E293B;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .onb-footer { flex-shrink: 0; padding: 12px 24px 28px; }
+    .onb-primary-btn {
+      width: 100%;
+      min-height: 52px;
+      padding: 15px;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--primary);
+      color: #fff;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.2s, background 0.2s;
+    }
+    .onb-primary-btn:active { transform: scale(0.98); }
+    .onb-primary-btn:disabled { opacity: 0.5; pointer-events: none; cursor: default; }
+    .onb-secondary-btn {
+      min-height: 48px;
+      padding: 12px 16px;
+      border: none;
+      background: none;
+      color: var(--text-secondary);
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .onb-action-row { display: flex; align-items: center; gap: 12px; }
+    .onb-action-row .onb-primary-btn { flex: 1; }
+
+    /* Carousel */
+    .onb-carousel-track {
+      display: flex;
+      height: 100%;
+      transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+      touch-action: pan-y;
+    }
+    .onb-card {
+      flex: 0 0 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 12px;
+    }
+    .onb-card-icon {
+      width: 96px;
+      height: 96px;
+      border-radius: 28px;
+      background: var(--primary-50);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+    .onb-card-icon svg { width: 44px; height: 44px; color: var(--primary); }
+    .onb-card-title {
+      font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: #0F172A;
+      margin-bottom: 12px;
+    }
+    .onb-card-desc {
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: #1E293B;
+      line-height: 1.6;
+      max-width: 300px;
+    }
+    .onb-dots { display: flex; justify-content: center; gap: 8px; padding: 20px 0; flex-shrink: 0; }
+    .onb-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 4px;
+      background: #94A3B8;
+      transition: width 0.35s cubic-bezier(0.34,1.56,0.64,1), background 0.35s ease;
+    }
+    .onb-dot.active { width: 24px; background: var(--primary); }
+
+    /* Auth screen */
+    .onb-social-btn {
+      width: 100%;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1.5px solid #94A3B8;
+      border-radius: var(--radius);
+      background: #fff;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #0F172A;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: box-shadow 0.15s, transform 0.15s;
+    }
+    .onb-social-btn:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+    .onb-social-btn svg { width: 20px; height: 20px; }
+    .onb-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      color: #475569;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .onb-divider::before, .onb-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #94A3B8;
+    }
+    .onb-field { margin-bottom: 20px; position: relative; }
+    .onb-field-label {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 15px;
+      color: #475569;
+      pointer-events: none;
+      transition: transform 0.15s ease, font-size 0.15s ease, color 0.15s ease;
+      transform-origin: left top;
+      background: #fff;
+      padding: 0 4px;
+    }
+    .onb-field-input {
+      width: 100%;
+      min-height: 52px;
+      padding: 16px;
+      border: 2px solid #94A3B8;
+      border-radius: var(--radius-sm);
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 15px;
+      color: #0F172A;
+      background: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .onb-field-input::placeholder { color: #64748B; }
+    .onb-field-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(13,148,136,0.15);
+    }
+    .onb-field.filled .onb-field-label,
+    .onb-field-input:focus + .onb-field-label {
+      transform: translateY(-25px) scale(0.85);
+      color: var(--primary);
+    }
+    .onb-field.error .onb-field-input { border-color: #EF4444; }
+    .onb-field.error .onb-field-input:focus { box-shadow: 0 0 0 4px rgba(239,68,68,0.15); }
+    .onb-field-error-msg {
+      display: none;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: #EF4444;
+      margin-top: 6px;
+      padding-left: 2px;
+    }
+    .onb-field.error .onb-field-error-msg { display: block; }
+
+    /* Pills (Sub-step 3A) */
+    .onb-field-group-label {
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0F172A;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .onb-pill-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .onb-pill {
+      padding: 12px 18px;
+      min-height: 48px;
+      border-radius: 24px;
+      border: 2px solid #94A3B8;
+      background: #fff;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .onb-pill.active {
+      background: var(--primary-50);
+      border-color: var(--primary);
+      color: var(--primary-dark);
+    }
+
+    /* Chips grid (Sub-step 3B) */
+    .onb-chip-grid { display: flex; flex-direction: column; gap: 12px; }
+    .onb-chip {
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      border: 2px solid #94A3B8;
+      background: #fff;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #0F172A;
+      cursor: pointer;
+      transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+      text-align: left;
+    }
+    .onb-chip:active { transform: scale(0.96); }
+    .onb-chip .onb-chip-check {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      border: 2px solid #94A3B8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .onb-chip .onb-chip-check svg {
+      width: 12px;
+      height: 12px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .onb-chip.active {
+      background: var(--primary-50);
+      border-color: var(--primary);
+    }
+    .onb-chip.active .onb-chip-check {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .onb-chip.active .onb-chip-check svg { opacity: 1; }
+
+    /* Tag input (Sub-step 3C) */
+    .onb-tag-input-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 52px;
+      padding: 10px 12px;
+      border: 1.5px solid #94A3B8;
+      border-radius: var(--radius-sm);
+      margin-bottom: 20px;
+    }
+    .onb-tag-input-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(13,148,136,0.15); }
+    .onb-tag-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 14px;
+      background: var(--primary-50);
+      color: var(--primary-dark);
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .onb-tag-pill button {
+      border: none;
+      background: none;
+      color: var(--primary-dark);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+    }
+    .onb-tag-input-wrap input {
+      flex: 1;
+      min-width: 100px;
+      border: none;
+      outline: none;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 14px;
+      color: #0F172A;
+      padding: 6px 2px;
+    }
+    .onb-tag-input-wrap input::placeholder { color: #64748B; }
+
+    /* Permissions */
+    .onb-perm-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      border-radius: var(--radius);
+      border: 1.5px solid #94A3B8;
+      margin-bottom: 14px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .onb-perm-card.enabled { border-color: var(--primary); background: var(--primary-50); }
+    .onb-perm-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--primary-50);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .onb-perm-icon svg { width: 22px; height: 22px; color: var(--primary); }
+    .onb-perm-text { flex: 1; }
+    .onb-perm-title {
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0F172A;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .onb-perm-title .onb-perm-check {
+      width: 16px; height: 16px; opacity: 0; transition: opacity 0.2s;
+    }
+    .onb-perm-card.enabled .onb-perm-check { opacity: 1; }
+    .onb-perm-desc {
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #1E293B;
+      line-height: 1.4;
+    }
+    .onb-toggle {
+      width: 48px;
+      height: 28px;
+      border-radius: 14px;
+      background: #94A3B8;
+      position: relative;
+      cursor: pointer;
+      flex-shrink: 0;
+      border: none;
+      transition: background 0.25s ease;
+    }
+    .onb-toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .onb-toggle.on { background: var(--primary); }
+    .onb-toggle.on::after { transform: translateX(20px); }
+
+    /* Completion / loading */
+    .onb-complete-screen {
+      background: var(--card);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: 0 32px;
+    }
+    .onb-arc-wrap { width: 120px; height: 120px; margin-bottom: 28px; position: relative; }
+    .onb-arc-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .onb-arc-track { fill: none; stroke: #94A3B8; stroke-width: 6; }
+    .onb-arc-fill {
+      fill: none;
+      stroke: var(--primary);
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-dasharray: 327;
+      stroke-dashoffset: 327;
+      animation: onbArcDraw 1.5s ease-in-out forwards;
+    }
+    @keyframes onbArcDraw { to { stroke-dashoffset: 0; } }
+    .onb-status-text {
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #1E293B;
+      min-height: 22px;
+    }
+
+    /* Home tooltip / spotlight */
+    .onb-tooltip {
+      position: absolute;
+      z-index: 20;
+      background: #0F172A;
+      color: #fff;
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      max-width: 240px;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .onb-tooltip.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    .onb-tooltip::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 28px;
+      width: 12px;
+      height: 12px;
+      background: #0F172A;
+      transform: rotate(45deg);
+    }
+    .onb-tooltip.arrow-bottom::before { top: auto; bottom: -6px; }
+    .onb-tooltip-close {
+      display: block;
+      margin-top: 8px;
+      background: none;
+      border: none;
+      color: var(--primary-light);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+    }
 
     /* ============ HOME ============ */
     .home-header {
@@ -214,6 +747,7 @@
       height: 200px;
       background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
       border-radius: 50%;
+      pointer-events: none;
     }
     .home-header .status-bar { color: rgba(255,255,255,0.8); }
     .home-header .greeting {
@@ -224,6 +758,7 @@
       letter-spacing: 0.3px;
     }
     .home-header .name {
+      font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
       color: #fff;
       font-size: 24px;
       font-weight: 700;
@@ -261,6 +796,509 @@
     .api-key-btn svg { width: 17px; height: 17px; fill: rgba(255,255,255,0.85); }
     .api-key-btn.custom-key { background: rgba(16,185,129,0.35); border-color: rgba(16,185,129,0.5); }
 
+    /* Home header: avatar + nicer top area */
+    .home-header::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -15%;
+      width: 160px;
+      height: 160px;
+      background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .home-header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .home-header-top .home-header-identity { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+    .home-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.25);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .home-header-top .greeting, .home-header-top .name { margin-bottom: 0; }
+
+    /* Hamburger trigger: plain icon, inline with the greeting row */
+    .hamburger-btn {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .hamburger-btn svg { width: 24px; height: 24px; stroke: rgba(255,255,255,0.9); }
+
+    /* Section title row (title + subtle custom-API-key icon on the right) */
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .section-title-row .section-title { margin-bottom: 0; }
+    .api-key-icon-btn {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      border-radius: 10px;
+      background: none;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .api-key-icon-btn svg { width: 18px; height: 18px; fill: #94A3B8; transition: fill 0.15s; }
+    .api-key-icon-btn.custom-key svg { fill: var(--primary); }
+
+    /* ============ DRAWER (account/settings hub) ============ */
+    .drawer-root {
+      position: absolute;
+      inset: 0;
+      z-index: 500;
+      pointer-events: none;
+    }
+    .drawer-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15,23,42,0.55);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .drawer-root.active .drawer-backdrop { opacity: 1; }
+    .drawer-root.active { pointer-events: auto; }
+    .drawer-panel {
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 83%;
+      max-width: 320px;
+      background: #fff;
+      box-shadow: -8px 0 40px rgba(0,0,0,0.25);
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.22,1,0.36,1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .drawer-root.active .drawer-panel { transform: translateX(0); }
+    .drawer-head {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 56px;
+      padding: 12px 16px;
+    }
+    .drawer-back-btn {
+      display: none;
+      align-items: center;
+      gap: 2px;
+      min-height: 48px;
+      padding: 0 6px 0 0;
+      margin: -4px 0 -4px -8px;
+      background: none;
+      border: none;
+      color: var(--primary-dark);
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .drawer-back-btn svg { width: 22px; height: 22px; }
+    .drawer-root.sub-open .drawer-back-btn { display: flex; }
+    .drawer-head-title {
+      flex: 1;
+      font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .drawer-close-btn {
+      width: 40px; height: 40px;
+      min-width: 48px; min-height: 48px;
+      margin: -4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      cursor: pointer;
+      margin-left: auto;
+    }
+    .drawer-close-btn svg { width: 20px; height: 20px; }
+
+    .drawer-pages-wrap { flex: 1; overflow: hidden; }
+    .drawer-pages {
+      display: flex;
+      width: 200%;
+      height: 100%;
+      transition: transform 0.3s cubic-bezier(0.22,1,0.36,1);
+    }
+    .drawer-root.sub-open .drawer-pages { transform: translateX(-50%); }
+    .drawer-page { width: 50%; flex-shrink: 0; height: 100%; overflow-y: auto; padding: 0 16px 24px; }
+
+    .drawer-profile-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border-radius: var(--radius);
+      background: var(--primary-50);
+      border: 1px solid var(--primary-100);
+      margin-bottom: 24px;
+      cursor: pointer;
+      min-height: 56px;
+    }
+    .drawer-profile-avatar {
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .drawer-profile-info { flex: 1; min-width: 0; }
+    .drawer-profile-name { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 700; color: var(--text-primary); }
+    .drawer-profile-email { font-size: 12px; color: #475569; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .drawer-profile-meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+    .drawer-plan-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      background: var(--primary-100);
+      padding: 2px 8px;
+      border-radius: 8px;
+      letter-spacing: 0.3px;
+    }
+    .drawer-encrypted { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #475569; font-weight: 500; }
+    .drawer-encrypted .dot { width: 6px; height: 6px; border-radius: 50%; background: #22C55E; }
+    .drawer-profile-chevron { color: #94A3B8; flex-shrink: 0; }
+    .drawer-profile-chevron svg { width: 18px; height: 18px; }
+
+    .drawer-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 56px;
+      padding: 16px 8px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      background: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      transition: background 0.15s;
+    }
+    .drawer-row:hover, .drawer-row:active { background: #F8FAFC; }
+    .drawer-row-icon {
+      width: 38px; height: 38px;
+      border-radius: 11px;
+      background: var(--primary-50);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .drawer-row-icon svg { width: 19px; height: 19px; color: var(--primary); }
+    .drawer-row-text { flex: 1; min-width: 0; }
+    .drawer-row-title { font-family: 'General Sans', 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+    .drawer-row-chevron { color: #94A3B8; flex-shrink: 0; }
+    .drawer-row-chevron svg { width: 16px; height: 16px; }
+
+    .drawer-footer {
+      flex-shrink: 0;
+      padding: 12px 16px 22px;
+      border-top: 1px solid #F1F5F9;
+    }
+    .drawer-version { font-size: 11px; color: #94A3B8; text-align: center; margin-bottom: 10px; }
+    .drawer-logout-btn {
+      display: block;
+      width: 100%;
+      min-height: 48px;
+      border: none;
+      background: none;
+      color: #DC2626;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    /* Generic drawer detail screen */
+    .drawer-detail-root {
+      position: absolute;
+      inset: 0;
+      z-index: 600;
+      pointer-events: none;
+    }
+    .drawer-detail-root.active { pointer-events: auto; }
+    .drawer-detail-panel {
+      position: absolute;
+      inset: 0;
+      background: var(--card);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.22,1,0.36,1);
+    }
+    .drawer-detail-root.active .drawer-detail-panel { transform: translateX(0); }
+    .drawer-detail-head {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px 8px;
+      min-height: 48px;
+    }
+    .drawer-detail-back {
+      width: 40px; height: 40px;
+      min-width: 48px; min-height: 48px;
+      margin: -4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-primary);
+    }
+    .drawer-detail-back svg { width: 20px; height: 20px; }
+    .drawer-detail-title { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); }
+    .drawer-detail-body { flex: 1; overflow-y: auto; padding: 8px 20px 32px; }
+
+    .dd-row-label { font-family: 'General Sans', 'Inter', sans-serif; font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+    .dd-row-desc { font-size: 12.5px; color: #475569; line-height: 1.4; margin-bottom: 10px; }
+    .dd-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid #F1F5F9;
+    }
+    .dd-toggle-row:last-child { border-bottom: none; }
+    .dd-info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #F1F5F9;
+    }
+    .dd-info-row .dd-info-value { font-size: 13px; color: #475569; font-weight: 500; }
+    .dd-pill-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .dd-pill {
+      padding: 10px 16px;
+      border-radius: 20px;
+      border: 2px solid #94A3B8;
+      background: #fff;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    .dd-pill.active { background: var(--primary-50); border-color: var(--primary); color: var(--primary-dark); }
+    .dd-section-title { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 18px 0 4px; }
+    .dd-text { font-size: 13px; color: #1E293B; line-height: 1.6; margin-bottom: 12px; }
+    .dd-btn {
+      width: 100%;
+      min-height: 48px;
+      border: 1.5px solid #94A3B8;
+      background: #fff;
+      border-radius: var(--radius-sm);
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+    .dd-btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .dd-device-card { padding: 14px; border: 1.5px solid #94A3B8; border-radius: var(--radius); margin-bottom: 12px; }
+    .dd-device-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .dd-device-name { font-family: 'General Sans', 'Inter', sans-serif; font-size: 14px; font-weight: 700; color: var(--text-primary); }
+    .dd-device-sync { font-size: 11.5px; color: #475569; margin-bottom: 8px; }
+    .dd-perm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .dd-perm-chip { font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 10px; background: #F1F5F9; color: #475569; }
+    .dd-perm-chip.on { background: var(--primary-50); color: var(--primary-dark); }
+    .dd-stars { display: flex; gap: 6px; margin-bottom: 16px; }
+    .dd-star { width: 32px; height: 32px; cursor: pointer; color: #CBD5E1; }
+    .dd-star.on { color: #F59E0B; }
+    .dd-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 12px;
+      border: 2px solid #94A3B8;
+      border-radius: var(--radius-sm);
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 13px;
+      color: #0F172A;
+      resize: vertical;
+      margin-bottom: 14px;
+    }
+    .dd-record-cat { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F1F5F9; }
+    .dd-record-cat-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .dd-record-cat-count { font-size: 12px; color: #475569; }
+
+    /* Logout confirmation modal */
+    .logout-modal { position: absolute; inset: 0; z-index: 700; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(15,23,42,0.5); }
+    .logout-modal.active { display: flex; }
+    .logout-modal-card { background: #fff; border-radius: var(--radius); padding: 22px; width: 100%; max-width: 300px; box-shadow: var(--shadow-lg); }
+    .logout-modal-card h3 { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+    .logout-modal-card p { font-size: 12.5px; color: #475569; line-height: 1.5; margin-bottom: 16px; }
+    .logout-modal-actions { display: flex; gap: 10px; }
+    .logout-modal-actions button { flex: 1; min-height: 44px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
+    .logout-modal-actions .cancel-btn { background: #F1F5F9; color: var(--text-primary); }
+    .logout-modal-actions .confirm-btn { background: #DC2626; color: #fff; }
+
+    /* Smart Pill Check modal */
+    .pc-modal {
+      position: absolute;
+      inset: 0;
+      z-index: 900;
+      display: none;
+      flex-direction: column;
+      background: #0F172A;
+    }
+    .pc-modal.active { display: flex; }
+    .pc-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 44px 16px 12px;
+    }
+    .pc-title { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; color: #fff; }
+    .pc-close-btn {
+      width: 40px; height: 40px;
+      min-width: 48px; min-height: 48px;
+      margin: -4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      cursor: pointer;
+    }
+    .pc-close-btn svg { width: 18px; height: 18px; }
+
+    .pc-camera-view { flex: 1; position: relative; background: #000; overflow: hidden; }
+    .pc-camera-view video, .pc-camera-view #pcCapturedImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .pc-scan-frame {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 70%;
+      aspect-ratio: 1;
+      border: 2.5px solid rgba(13,148,136,0.85);
+      border-radius: 20px;
+      pointer-events: none;
+    }
+    .pc-hint {
+      position: absolute;
+      bottom: 16px; left: 0; right: 0;
+      text-align: center;
+      color: rgba(255,255,255,0.75);
+      font-size: 13px;
+      font-weight: 500;
+      pointer-events: none;
+    }
+    .pc-camera-error {
+      display: none;
+      position: absolute;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 32px;
+      color: #fff;
+      font-size: 13px;
+    }
+    .pc-camera-error.visible { display: flex; }
+
+    .pc-capture-bar { flex-shrink: 0; display: flex; align-items: center; justify-content: center; padding: 22px 0 34px; }
+    .pc-capture-btn {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      background: none;
+      border: 4px solid #fff;
+      cursor: pointer;
+      position: relative;
+    }
+    .pc-capture-btn::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: #fff;
+    }
+
+    .pc-loading {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    .pc-loading.active { display: flex; }
+    .pc-spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: #14B8A6;
+      border-radius: 50%;
+      animation: pcSpin 0.8s linear infinite;
+    }
+    @keyframes pcSpin { to { transform: rotate(360deg); } }
+    .pc-loading-text { color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 500; }
+
+    .pc-results { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .pc-results.active { display: flex; }
+    .pc-result-body { flex: 1; overflow-y: auto; padding: 4px 20px 16px; background: #F8FAFC; border-radius: 20px 20px 0 0; }
+    .pc-result-section { margin-top: 18px; }
+    .pc-result-section:first-child { margin-top: 20px; }
+    .pc-result-heading { display: flex; align-items: center; gap: 8px; font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 13.5px; font-weight: 700; color: #0F172A; margin-bottom: 8px; }
+    .pc-result-heading svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .pc-result-heading.warn { color: #B45309; }
+    .pc-pill-name { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 19px; font-weight: 800; color: #0F172A; margin-bottom: 2px; }
+    .pc-pill-sub { font-size: 12.5px; color: #475569; margin-bottom: 4px; }
+    .pc-tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pc-tag { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 10px; background: #fff; border: 1px solid #E2E8F0; color: #1E293B; }
+    .pc-tag.warn { background: #FEF3C7; border-color: #FDE68A; color: #92400E; }
+    .pc-tag.food { background: var(--primary-50); border-color: var(--primary-100); color: var(--primary-dark); }
+    .pc-empty-note { font-size: 12.5px; color: #94A3B8; font-style: italic; }
+
+    .pc-result-actions { flex-shrink: 0; display: flex; gap: 10px; padding: 14px 20px 24px; background: #F8FAFC; }
+    .pc-result-actions button { flex: 1; min-height: 48px; border-radius: var(--radius-sm); font-family: 'General Sans', 'Inter', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .pc-retake-btn { background: #fff; border: 1.5px solid #94A3B8; color: #0F172A; }
+    .pc-done-btn { background: var(--primary); border: none; color: #fff; }
+
+    .pc-disclaimer { flex-shrink: 0; text-align: center; font-size: 10.5px; color: rgba(255,255,255,0.4); padding: 0 24px 14px; }
+
     .api-key-modal {
       position: fixed;
       inset: 0;
@@ -281,7 +1319,7 @@
       box-shadow: var(--shadow-lg);
       position: relative;
     }
-    .api-key-modal-card h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+    .api-key-modal-card h3 { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
     .api-key-modal-card p { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px; }
     .api-key-modal-card input {
       width: 100%;
@@ -316,6 +1354,7 @@
     .home-body { padding: 20px; flex: 1; overflow-y: auto; }
 
     .section-title {
+      font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
       font-size: 17px;
       font-weight: 700;
       color: var(--text-primary);
@@ -359,7 +1398,7 @@
     .feature-icon.orange svg { fill: #D97706; }
     .feature-icon.red { background: linear-gradient(135deg, #FEE2E2, #FECACA); }
     .feature-icon.red svg { fill: #DC2626; }
-    .feature-card h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+    .feature-card h3 { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
     .feature-card p { font-size: 11px; color: var(--text-muted); line-height: 1.4; font-weight: 400; }
 
     .today-card {
@@ -423,7 +1462,7 @@
       align-items: center;
       justify-content: space-between;
     }
-    .scanner-header h2 { color: #fff; font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
+    .scanner-header h2 { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; color: #fff; font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
     .scan-mode-toggle {
       display: flex;
       background: rgba(255,255,255,0.06);
@@ -671,7 +1710,7 @@
     }
     .back-btn:active { transform: scale(0.93); }
     .back-btn svg { width: 18px; height: 18px; fill: var(--text-primary); }
-    .result-header h2 { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.2px; }
+    .result-header h2 { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.2px; }
     .result-body { padding: 0 20px 20px; flex: 1; overflow-y: auto; }
 
     .raw-text-toggle {
@@ -849,7 +1888,7 @@
       gap: 12px;
       flex-shrink: 0;
     }
-    .schedule-header h2 { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.2px; }
+    .schedule-header h2 { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.2px; }
     .schedule-body { padding: 0 20px 20px; flex: 1; overflow-y: auto; }
     .schedule-banner {
       background: linear-gradient(135deg, #CCFBF1, #99F6E4);
@@ -991,7 +2030,7 @@
       border: 2px solid var(--border);
       border-radius: var(--radius);
       font-size: 15px;
-      font-family: 'Inter', sans-serif;
+      font-family: 'General Sans', 'Inter', sans-serif;
       font-weight: 500;
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
@@ -1021,6 +2060,193 @@
       box-shadow: var(--shadow-lg);
     }
     .schedule-toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ============ PRESCRIPTION & ROUTINE ============ */
+    .rx-screen { background: #F8FAFC; }
+    .rx-header {
+      background: #0F172A;
+      padding: 0 20px 20px;
+      flex-shrink: 0;
+    }
+    .rx-header .status-bar { color: rgba(255,255,255,0.8); }
+    .rx-header-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+    .rx-back-btn {
+      width: 40px; height: 40px;
+      min-width: 48px; min-height: 48px;
+      margin: -4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+    }
+    .rx-back-btn svg { width: 22px; height: 22px; }
+    .rx-header-title { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 19px; font-weight: 700; color: #fff; }
+
+    .rx-segmented {
+      display: flex;
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 4px;
+      margin-top: 18px;
+    }
+    .rx-segment {
+      flex: 1;
+      min-height: 40px;
+      border: none;
+      background: none;
+      border-radius: 9px;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .rx-segment.active { background: #fff; color: #0F172A; }
+
+    .rx-body { flex: 1; overflow-y: auto; padding: 18px 20px 28px; }
+    .rx-tab-panel { display: none; }
+    .rx-tab-panel.active { display: block; }
+
+    .rx-active-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border-radius: var(--radius);
+      background: var(--primary-50);
+      border: 1px solid var(--primary-100);
+      margin-bottom: 16px;
+    }
+    .rx-active-icon {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .rx-active-icon svg { width: 21px; height: 21px; }
+    .rx-active-title { font-family: 'General Sans', 'Inter', sans-serif; font-size: 14px; font-weight: 700; color: #0F172A; }
+    .rx-active-sub { font-size: 12px; color: #475569; margin-top: 1px; }
+
+    .rx-action-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+    .rx-action-btn {
+      flex: 1;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: var(--radius-sm);
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1.5px solid #94A3B8;
+      background: #fff;
+      color: #0F172A;
+    }
+    .rx-action-btn svg { width: 16px; height: 16px; }
+    .rx-action-btn.danger { border-color: #FCA5A5; color: #EF4444; }
+
+    .rx-med-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border-radius: var(--radius);
+      background: #fff;
+      border: 1px solid #E2E8F0;
+      margin-bottom: 12px;
+    }
+    .rx-med-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .rx-med-info { flex: 1; min-width: 0; }
+    .rx-med-name { font-family: 'General Sans', 'Inter', sans-serif; font-size: 14.5px; font-weight: 700; color: #0F172A; }
+    .rx-med-meta { font-size: 12px; color: #475569; margin-top: 2px; }
+    .rx-med-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .rx-icon-btn {
+      width: 40px; height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 10px;
+      color: #475569;
+    }
+    .rx-icon-btn:hover { background: #F1F5F9; }
+    .rx-icon-btn svg { width: 18px; height: 18px; }
+    .rx-icon-btn.delete { color: #EF4444; }
+
+    .rx-add-btn {
+      width: 100%;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1.5px dashed #94A3B8;
+      background: none;
+      border-radius: var(--radius);
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    /* Calendar tab */
+    .rx-cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .rx-cal-month { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 700; color: #0F172A; }
+    .rx-cal-nav-btn { width: 36px; height: 36px; border: none; background: #F1F5F9; border-radius: 9px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #0F172A; }
+    .rx-cal-nav-btn svg { width: 16px; height: 16px; }
+    .rx-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 8px; }
+    .rx-cal-dow { text-align: center; font-size: 10.5px; font-weight: 700; color: #94A3B8; padding-bottom: 4px; }
+    .rx-cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      border: none;
+      background: #fff;
+      cursor: pointer;
+      font-family: 'General Sans', 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #0F172A;
+      gap: 3px;
+    }
+    .rx-cal-day.empty { visibility: hidden; cursor: default; }
+    .rx-cal-day.selected { background: #0F172A; color: #fff; }
+    .rx-cal-day.today:not(.selected) { box-shadow: inset 0 0 0 1.5px var(--primary); }
+    .rx-cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+    .rx-cal-dot.green { background: #22C55E; }
+    .rx-cal-dot.amber { background: #F59E0B; }
+    .rx-cal-legend { display: flex; gap: 16px; margin: 14px 0 18px; font-size: 12px; color: #475569; }
+    .rx-cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .rx-day-preview-title { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700; color: #0F172A; margin-bottom: 10px; }
+
+    /* Inline modals: edit medicine / add medicine / clear-all confirm */
+    .rx-modal { position: absolute; inset: 0; z-index: 800; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(15,23,42,0.5); }
+    .rx-modal.active { display: flex; }
+    .rx-modal-card { background: #fff; border-radius: var(--radius); padding: 20px; width: 100%; max-width: 300px; box-shadow: var(--shadow-lg); }
+    .rx-modal-card h3 { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; color: #0F172A; margin-bottom: 14px; }
+    .rx-modal-card p { font-size: 12.5px; color: #475569; line-height: 1.5; margin-bottom: 16px; }
+    .rx-modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+    .rx-modal-actions button { flex: 1; min-height: 44px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
+    .rx-modal-actions .cancel-btn { background: #F1F5F9; color: #0F172A; }
+    .rx-modal-actions .save-btn { background: var(--primary); color: #fff; }
+    .rx-modal-actions .danger-btn { background: #EF4444; color: #fff; }
 
     .review-screen { background: var(--bg); }
     .review-header {
@@ -1072,7 +2298,7 @@
       justify-content: center;
       flex-shrink: 0;
     }
-    .review-card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .review-card-title { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 600; color: var(--text-primary); }
     .review-field {
       margin-bottom: 12px;
     }
@@ -1184,7 +2410,7 @@
       box-shadow: 0 2px 8px rgba(13,148,136,0.3);
     }
     .chat-avatar svg { width: 22px; height: 22px; fill: #fff; }
-    .chat-header-info h3 { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.1px; }
+    .chat-header-info h3 { font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.1px; }
     .chat-header-info .online { font-size: 11px; color: var(--primary); display: flex; align-items: center; gap: 4px; font-weight: 500; }
     .online-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -1481,13 +2707,12 @@
 
     /* ============ KEYFRAME ANIMATIONS ============ */
     @keyframes splashFadeUp {
-      0% { opacity: 0; transform: translateY(24px); }
+      0% { opacity: 0; transform: translateY(28px); }
       100% { opacity: 1; transform: translateY(0); }
     }
-    @keyframes splashFlashPulse {
+    @keyframes splashLogoFade {
       0% { opacity: 0; }
-      30% { opacity: 1; }
-      100% { opacity: 0; }
+      100% { opacity: 1; }
     }
 
     @keyframes screenSlideIn {
@@ -1597,13 +2822,231 @@
             <svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
           </div>
         </div>
-        <canvas id="splashCanvas"></canvas>
-        <div class="splash-flash" id="splashFlash"></div>
-        <div class="splash-content" id="splashContent">
+        <div class="splash-logo-half">
+          <img src="assets/health.png" alt="Aegis caduceus logo" />
+        </div>
+        <div class="splash-text-half">
           <div class="splash-title-3d">AEGIS</div>
           <div class="splash-subtitle-3d">Your Intelligent Health Partner</div>
-          <button class="splash-btn-3d" onclick="showScreen('screen-home')">Get Started</button>
+          <div class="splash-btn-wrap">
+            <button class="splash-btn-3d" onclick="showScreen('screen-onb-carousel')">Get Started</button>
+            <p class="splash-login-line">Already have an account? <button type="button" class="splash-login-link">Log in</button></p>
+          </div>
         </div>
+      </div>
+
+      <!-- Onboarding: Value Prop Carousel -->
+      <div class="screen onb-screen" id="screen-onb-carousel">
+        <div class="onb-header">
+          <span></span>
+          <button class="onb-skip-btn" onclick="onbSkipCarousel()">Skip</button>
+        </div>
+        <div style="flex:1; overflow:hidden;">
+          <div class="onb-carousel-track" id="onbCarouselTrack">
+            <div class="onb-card">
+              <div class="onb-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+              </div>
+              <div class="onb-card-title">Intelligent Health Tracking</div>
+              <div class="onb-card-desc">Effortlessly manage your health records, lab results, and daily wellness in one secure hub.</div>
+            </div>
+            <div class="onb-card">
+              <div class="onb-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>
+              </div>
+              <div class="onb-card-title">AI Health Insights</div>
+              <div class="onb-card-desc">Get personalized, instant guidance and actionable health summaries tailored to your data.</div>
+            </div>
+            <div class="onb-card">
+              <div class="onb-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg>
+              </div>
+              <div class="onb-card-title">Privacy &amp; Security First</div>
+              <div class="onb-card-desc">Your medical data is encrypted and completely under your control at all times.</div>
+            </div>
+          </div>
+        </div>
+        <div class="onb-dots" id="onbDots">
+          <div class="onb-dot active"></div>
+          <div class="onb-dot"></div>
+          <div class="onb-dot"></div>
+        </div>
+        <div class="onb-footer">
+          <button class="onb-primary-btn" id="onbCarouselBtn" onclick="onbCarouselNext()">Next</button>
+        </div>
+      </div>
+
+      <!-- Onboarding: Authentication -->
+      <div class="screen onb-screen" id="screen-onb-auth">
+        <div class="onb-header">
+          <button class="onb-back-btn" onclick="showScreen('screen-onb-carousel')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <span></span>
+          <span style="width:48px;"></span>
+        </div>
+        <div class="onb-body">
+          <div class="onb-title">Welcome to Aegis</div>
+          <div class="onb-subtitle">Choose your preferred sign-in method to secure your account.</div>
+          <button class="onb-social-btn" onclick="onbSocialAuth()">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.44 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.35-1.25-3.41-2.75C3.94 18.73 3 16.07 3 13.55c0-3.86 2.5-5.92 4.99-5.92 1.5 0 2.75.9 3.65.9.86 0 2.32-.91 3.99-.91.62 0 2.9.06 4.43 2.24-.12.08-2.4 1.4-2.4 4.34 0 3.44 3 4.7 3.4 4.85z"/></svg>
+            Continue with Apple
+          </button>
+          <button class="onb-social-btn" onclick="onbSocialAuth()">
+            <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Continue with Google
+          </button>
+          <div class="onb-divider">or continue with email</div>
+          <div class="onb-field" id="onbEmailField">
+            <input type="email" class="onb-field-input" id="onbEmailInput" placeholder=" " oninput="onbValidateEmail()" onblur="onbValidateEmail(true)">
+            <label class="onb-field-label" for="onbEmailInput">Email address</label>
+            <div class="onb-field-error-msg">Enter a valid email address.</div>
+          </div>
+        </div>
+        <div class="onb-footer">
+          <button class="onb-primary-btn" id="onbAuthContinueBtn" disabled onclick="showScreen('screen-onb-wizard')">Continue</button>
+        </div>
+      </div>
+
+      <!-- Onboarding: Multi-step Health Personalization Wizard -->
+      <div class="screen onb-screen" id="screen-onb-wizard">
+        <div class="onb-header">
+          <button class="onb-back-btn" onclick="onbWizardBack()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="onb-progress-track">
+            <div class="onb-progress-seg"><div class="onb-progress-seg-fill" id="onbProgSeg1"></div></div>
+            <div class="onb-progress-seg"><div class="onb-progress-seg-fill" id="onbProgSeg2"></div></div>
+            <div class="onb-progress-seg"><div class="onb-progress-seg-fill" id="onbProgSeg3"></div></div>
+          </div>
+          <span style="width:48px;"></span>
+        </div>
+        <div class="onb-body">
+          <!-- 3A: Basic Info -->
+          <div class="onb-wizard-step" id="onbStep1">
+            <div class="onb-title">Basic Info</div>
+            <div class="onb-subtitle">Let's start with a few details about you.</div>
+            <div class="onb-field filled">
+              <input type="text" class="onb-field-input" id="onbNameInput" placeholder=" " oninput="onbSaveField('fullName', this.value)">
+              <label class="onb-field-label" for="onbNameInput">Full name</label>
+            </div>
+            <div class="onb-field filled">
+              <input type="date" class="onb-field-input" id="onbDobInput" placeholder=" " oninput="onbSaveField('dob', this.value)">
+              <label class="onb-field-label" for="onbDobInput">Date of birth</label>
+            </div>
+            <span class="onb-field-group-label">Sex assigned at birth</span>
+            <div class="onb-pill-row" id="onbSexPills">
+              <button type="button" class="onb-pill" data-val="Male" onclick="onbSelectPill(this,'sex')">Male</button>
+              <button type="button" class="onb-pill" data-val="Female" onclick="onbSelectPill(this,'sex')">Female</button>
+              <button type="button" class="onb-pill" data-val="Intersex" onclick="onbSelectPill(this,'sex')">Intersex</button>
+              <button type="button" class="onb-pill" data-val="Prefer not to say" onclick="onbSelectPill(this,'sex')">Prefer not to say</button>
+            </div>
+          </div>
+          <!-- 3B: Health Goals -->
+          <div class="onb-wizard-step" id="onbStep2" style="display:none;">
+            <div class="onb-title">What would you like Aegis to assist you with?</div>
+            <div class="onb-subtitle">Select all that apply.</div>
+            <div class="onb-chip-grid" id="onbGoalChips">
+              <button type="button" class="onb-chip" data-val="Track Symptoms & Vitals" onclick="onbToggleChip(this)">
+                <span class="onb-chip-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></span>
+                Track Symptoms &amp; Vitals
+              </button>
+              <button type="button" class="onb-chip" data-val="Organize Medical Records" onclick="onbToggleChip(this)">
+                <span class="onb-chip-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></span>
+                Organize Medical Records
+              </button>
+              <button type="button" class="onb-chip" data-val="Get AI Health Answers" onclick="onbToggleChip(this)">
+                <span class="onb-chip-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></span>
+                Get AI Health Answers
+              </button>
+              <button type="button" class="onb-chip" data-val="Medication Reminders" onclick="onbToggleChip(this)">
+                <span class="onb-chip-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></span>
+                Medication Reminders
+              </button>
+              <button type="button" class="onb-chip" data-val="General Wellness Coaching" onclick="onbToggleChip(this)">
+                <span class="onb-chip-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></span>
+                General Wellness Coaching
+              </button>
+            </div>
+          </div>
+          <!-- 3C: Medical Context -->
+          <div class="onb-wizard-step" id="onbStep3" style="display:none;">
+            <div class="onb-title">Any existing medical details?</div>
+            <div class="onb-subtitle">This helps our AI tailor its responses accurately.</div>
+            <span class="onb-field-group-label">Pre-existing conditions</span>
+            <div class="onb-tag-input-wrap" id="onbConditionsWrap" onclick="document.getElementById('onbConditionsInput').focus()">
+              <input type="text" id="onbConditionsInput" placeholder="Type and press Enter" onkeydown="onbTagKeydown(event,'conditions')">
+            </div>
+            <span class="onb-field-group-label">Known allergies</span>
+            <div class="onb-tag-input-wrap" id="onbAllergiesWrap" onclick="document.getElementById('onbAllergiesInput').focus()">
+              <input type="text" id="onbAllergiesInput" placeholder="Type and press Enter" onkeydown="onbTagKeydown(event,'allergies')">
+            </div>
+          </div>
+        </div>
+        <div class="onb-footer">
+          <div class="onb-action-row" id="onbStep3Actions" style="display:none;">
+            <button class="onb-secondary-btn" onclick="onbCompleteWizard()">Skip for now</button>
+            <button class="onb-primary-btn" onclick="onbCompleteWizard()">Save &amp; Continue</button>
+          </div>
+          <button class="onb-primary-btn" id="onbWizardNextBtn" onclick="onbWizardNext()">Next</button>
+        </div>
+      </div>
+
+      <!-- Onboarding: Permissions -->
+      <div class="screen onb-screen" id="screen-onb-permissions">
+        <div class="onb-header">
+          <span></span>
+          <span></span>
+          <span style="width:48px;"></span>
+        </div>
+        <div class="onb-body">
+          <div class="onb-title">Set Up Your Experience</div>
+          <div class="onb-subtitle">Aegis needs a few permissions to protect and serve you best.</div>
+          <div class="onb-perm-card" id="onbPermCard-notif">
+            <div class="onb-perm-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg></div>
+            <div class="onb-perm-text">
+              <div class="onb-perm-title">Smart Notifications
+                <svg class="onb-perm-check" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <div class="onb-perm-desc">Receive timely medication reminders and AI health check-ins.</div>
+            </div>
+            <button type="button" class="onb-toggle" onclick="onbTogglePermission(this,'notif')"></button>
+          </div>
+          <div class="onb-perm-card" id="onbPermCard-biometric">
+            <div class="onb-perm-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4a4 4 0 00-4 4v2a4 4 0 008 0V8a4 4 0 00-4-4zM6 20c0-3 3-5 6-5s6 2 6 5"/></svg></div>
+            <div class="onb-perm-text">
+              <div class="onb-perm-title">Biometric Security
+                <svg class="onb-perm-check" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <div class="onb-perm-desc">Lock your health records behind Face ID / Touch ID.</div>
+            </div>
+            <button type="button" class="onb-toggle" onclick="onbTogglePermission(this,'biometric')"></button>
+          </div>
+          <div class="onb-perm-card" id="onbPermCard-sync">
+            <div class="onb-perm-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9-6-18-3 9H2"/></svg></div>
+            <div class="onb-perm-text">
+              <div class="onb-perm-title">Health Data Sync
+                <svg class="onb-perm-check" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <div class="onb-perm-desc">Sync steps, sleep, and heart rate from Apple Health / Google Fit.</div>
+            </div>
+            <button type="button" class="onb-toggle" onclick="onbTogglePermission(this,'sync')"></button>
+          </div>
+        </div>
+        <div class="onb-footer">
+          <button class="onb-primary-btn" onclick="onbCompleteSetup()">Complete Setup</button>
+        </div>
+      </div>
+
+      <!-- Onboarding: Completion -->
+      <div class="screen onb-complete-screen" id="screen-onb-complete">
+        <div class="onb-arc-wrap">
+          <svg viewBox="0 0 120 120">
+            <circle class="onb-arc-track" cx="60" cy="60" r="52"/>
+            <circle class="onb-arc-fill" id="onbArcFill" cx="60" cy="60" r="52"/>
+          </svg>
+        </div>
+        <div class="onb-status-text" id="onbStatusText">Encrypting your personal space...</div>
       </div>
 
       <!-- Home -->
@@ -1616,18 +3059,30 @@
               <svg viewBox="0 0 24 24" fill="#fff"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
             </div>
           </div>
-          <div class="api-key-btn" id="apiKeyBtn" onclick="showApiKeyModal()" title="Use your own API key">
-            <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-2 .9-2 2z"/></svg>
+          <div class="home-header-top">
+            <div class="home-header-identity">
+              <div class="home-avatar" id="homeAvatar">SJ</div>
+              <div>
+                <div class="greeting" id="homeGreeting">Good morning</div>
+                <div class="name" id="homeName">Sarah Johnson</div>
+              </div>
+            </div>
+            <button class="hamburger-btn" id="hamburgerBtn" onclick="openDrawer()" title="Menu">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </button>
           </div>
-          <div class="greeting">Good morning</div>
-          <div class="name">Sarah Johnson</div>
           <div class="search-bar">
             <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
             <span>Search medicines, conditions...</span>
           </div>
         </div>
         <div class="home-body">
-          <div class="section-title">Quick Actions</div>
+          <div class="section-title-row">
+            <div class="section-title">Quick Actions</div>
+            <button class="api-key-icon-btn" id="apiKeyBtn" onclick="showApiKeyModal()" title="Use your own API key">
+              <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-2 .9-2 2z"/></svg>
+            </button>
+          </div>
           <div class="feature-grid">
             <div class="feature-card" onclick="showScreen('screen-scanner')">
               <div class="feature-icon green">
@@ -1636,26 +3091,30 @@
               <h3>Smart Scan</h3>
               <p>Auto-detect & decode</p>
             </div>
-            <div class="feature-card" onclick="showScreen('screen-result')">
+            <div class="feature-card" onclick="openPillCheckModal()">
               <div class="feature-icon blue">
                 <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
               </div>
-              <h3>Allergy Check</h3>
-              <p>Smart flagging</p>
+              <h3>Smart Pill Check</h3>
+              <p>Instant scan for allergens &amp; details</p>
             </div>
-            <div class="feature-card">
+            <div class="feature-card" onclick="showScreen('screen-rx-routine')">
               <div class="feature-icon orange">
                 <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
               </div>
-              <h3>Schedule</h3>
-              <p>Set reminders</p>
+              <h3>Prescription &amp; Routine</h3>
+              <p>Manage Rx, scan &amp; calendar</p>
             </div>
-            <div class="feature-card" onclick="showScreen('screen-chat')">
+            <div class="feature-card" style="position:relative;" onclick="showScreen('screen-chat')">
               <div class="feature-icon red">
                 <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
               </div>
               <h3>Consult</h3>
               <p>Private chat</p>
+              <div class="onb-tooltip arrow-bottom" id="onbHomeTooltip" style="bottom:calc(100% + 10px); left:0; right:0; margin:0 auto;" onclick="event.stopPropagation()">
+                Ask Aegis your first health query
+                <button type="button" class="onb-tooltip-close" onclick="onbDismissTooltip()">Got it</button>
+              </div>
             </div>
           </div>
 
@@ -1890,6 +3349,108 @@
         </div>
       </div>
 
+      <!-- Prescription & Routine -->
+      <div class="screen rx-screen" id="screen-rx-routine">
+        <div class="rx-header">
+          <div class="status-bar">
+            <span class="time">9:41</span>
+            <div class="status-icons">
+              <svg viewBox="0 0 24 24" fill="#fff"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 00-6 0zm-4-4l2 2a7.074 7.074 0 0110 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+              <svg viewBox="0 0 24 24" fill="#fff"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            </div>
+          </div>
+          <div class="rx-header-row">
+            <button class="rx-back-btn" onclick="showScreen('screen-home')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div class="rx-header-title">Prescription &amp; Routine</div>
+          </div>
+          <div class="rx-segmented">
+            <button class="rx-segment active" id="rxTabBtnActive" onclick="rxSwitchTab('active')">Active Plan</button>
+            <button class="rx-segment" id="rxTabBtnCalendar" onclick="rxSwitchTab('calendar')">Calendar</button>
+          </div>
+        </div>
+        <div class="rx-body">
+          <!-- Tab 1: Active Plan -->
+          <div class="rx-tab-panel active" id="rxTabActive">
+            <div class="rx-active-card">
+              <div class="rx-active-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6zM15 2v5h5"/></svg></div>
+              <div>
+                <div class="rx-active-title" id="rxSourceTitle">Scanned prescription</div>
+                <div class="rx-active-sub" id="rxSourceSub">Jan 12, 2026</div>
+              </div>
+            </div>
+            <div class="rx-action-bar">
+              <button class="rx-action-btn" onclick="rxReplaceRx()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3M4 4v5h5M20 20v-5h-5"/></svg>
+                Replace Rx (Re-Scan)
+              </button>
+              <button class="rx-action-btn danger" onclick="rxShowClearAllConfirm()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>
+                Clear All
+              </button>
+            </div>
+            <div id="rxMedList"></div>
+            <button class="rx-add-btn" onclick="rxShowAddMedicine()">➕ Add Individual Medicine</button>
+          </div>
+          <!-- Tab 2: Calendar -->
+          <div class="rx-tab-panel" id="rxTabCalendar">
+            <div class="rx-cal-nav">
+              <button class="rx-cal-nav-btn" onclick="rxCalNav(-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+              <div class="rx-cal-month" id="rxCalMonthLabel"></div>
+              <button class="rx-cal-nav-btn" onclick="rxCalNav(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="rx-cal-grid" id="rxCalGrid"></div>
+            <div class="rx-cal-legend">
+              <span><span class="rx-cal-dot green"></span> Full adherence</span>
+              <span><span class="rx-cal-dot amber"></span> Missed dose</span>
+            </div>
+            <div class="rx-day-preview-title" id="rxDayPreviewTitle">Today's schedule</div>
+            <div id="rxDayPreviewList"></div>
+          </div>
+        </div>
+
+        <!-- Edit medicine modal -->
+        <div class="rx-modal" id="rxEditModal">
+          <div class="rx-modal-card">
+            <h3>Edit Medicine</h3>
+            <div class="onb-field filled"><input class="onb-field-input" id="rxEditDosage"><label class="onb-field-label">Dosage</label></div>
+            <div class="onb-field filled"><input type="time" class="onb-field-input" id="rxEditTime"><label class="onb-field-label">Time</label></div>
+            <div class="rx-modal-actions">
+              <button class="cancel-btn" onclick="rxHideEditModal()">Cancel</button>
+              <button class="save-btn" onclick="rxSaveEdit()">Save</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add medicine modal -->
+        <div class="rx-modal" id="rxAddModal">
+          <div class="rx-modal-card">
+            <h3>Add Medicine</h3>
+            <div class="onb-field filled"><input class="onb-field-input" id="rxAddName" placeholder=" "><label class="onb-field-label">Medicine name</label></div>
+            <div class="onb-field filled"><input class="onb-field-input" id="rxAddDosage" placeholder=" "><label class="onb-field-label">Dosage (e.g. 500mg)</label></div>
+            <div class="onb-field filled"><input class="onb-field-input" id="rxAddFrequency" placeholder=" "><label class="onb-field-label">Frequency (e.g. Once daily)</label></div>
+            <div class="onb-field filled"><input type="time" class="onb-field-input" id="rxAddTime" value="08:00"><label class="onb-field-label">Time</label></div>
+            <div class="rx-modal-actions">
+              <button class="cancel-btn" onclick="rxHideAddModal()">Cancel</button>
+              <button class="save-btn" onclick="rxSaveAdd()">Add</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clear all confirmation -->
+        <div class="rx-modal" id="rxClearAllModal">
+          <div class="rx-modal-card">
+            <h3>Clear all current medicines?</h3>
+            <p>This will reset today's schedule.</p>
+            <div class="rx-modal-actions">
+              <button class="cancel-btn" onclick="rxHideClearAllConfirm()">Cancel</button>
+              <button class="danger-btn" onclick="rxConfirmClearAll()">Clear All</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Chat -->
       <div class="screen chat-screen" id="screen-chat">
         <div class="chat-header">
@@ -1932,6 +3493,127 @@
             <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
           </button>
         </div>
+      </div>
+
+      <!-- Account/Settings Drawer -->
+      <div class="drawer-root" id="drawerRoot">
+        <div class="drawer-backdrop" onclick="closeDrawer()"></div>
+        <div class="drawer-panel">
+          <div class="drawer-head">
+            <button class="drawer-back-btn" id="drawerBackBtn" onclick="drawerGoToMain()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Back
+            </button>
+            <div class="drawer-head-title" id="drawerHeadTitle"></div>
+            <button class="drawer-close-btn" onclick="closeDrawer()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+          </div>
+          <div class="drawer-pages-wrap">
+            <div class="drawer-pages" id="drawerPages">
+              <div class="drawer-page">
+                <div class="drawer-profile-card" onclick="openDrawerDetail('editProfile')">
+                  <div class="drawer-profile-avatar" id="drawerAvatar">SJ</div>
+                  <div class="drawer-profile-info">
+                    <div class="drawer-profile-name" id="drawerName">Sarah Johnson</div>
+                    <div class="drawer-profile-email" id="drawerEmail">sarah.j@example.com</div>
+                    <div class="drawer-profile-meta">
+                      <span class="drawer-plan-badge">Free Tier</span>
+                      <span class="drawer-encrypted"><span class="dot"></span>Encrypted &amp; Synced</span>
+                    </div>
+                  </div>
+                  <span class="drawer-profile-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>
+                </div>
+
+                <button class="drawer-row" onclick="drawerOpenCategory('health')">
+                  <span class="drawer-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3v7a5 5 0 0010 0V3M8 3v8M18 14a3 3 0 100 6 3 3 0 000-6zM18 14v-3a5 5 0 00-5-5"/></svg></span>
+                  <span class="drawer-row-text"><span class="drawer-row-title">Health Profile &amp; Records</span></span>
+                  <span class="drawer-row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>
+                </button>
+                <button class="drawer-row" onclick="drawerOpenCategory('ai')">
+                  <span class="drawer-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg></span>
+                  <span class="drawer-row-text"><span class="drawer-row-title">AI &amp; Preferences</span></span>
+                  <span class="drawer-row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>
+                </button>
+                <button class="drawer-row" onclick="drawerOpenCategory('security')">
+                  <span class="drawer-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg></span>
+                  <span class="drawer-row-text"><span class="drawer-row-title">Security &amp; Data</span></span>
+                  <span class="drawer-row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>
+                </button>
+                <button class="drawer-row" onclick="drawerOpenCategory('support')">
+                  <span class="drawer-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a10 10 0 100-20 10 10 0 000 20zM9.5 9a2.5 2.5 0 015 .5c0 1.5-2 2-2 3.5M12 17h.01"/></svg></span>
+                  <span class="drawer-row-text"><span class="drawer-row-title">Help &amp; Support</span></span>
+                  <span class="drawer-row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>
+                </button>
+              </div>
+              <div class="drawer-page" id="drawerSubPage"></div>
+            </div>
+          </div>
+          <div class="drawer-footer">
+            <div class="drawer-version">Aegis v1.2.0 (Build 408)</div>
+            <button class="drawer-logout-btn" onclick="showLogoutConfirm()">Log Out</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generic drawer detail screen (content populated by JS) -->
+      <div class="drawer-detail-root" id="drawerDetailRoot">
+        <div class="drawer-detail-panel">
+          <div class="drawer-detail-head">
+            <button class="drawer-detail-back" onclick="closeDrawerDetail()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div class="drawer-detail-title" id="drawerDetailTitle">Title</div>
+          </div>
+          <div class="drawer-detail-body" id="drawerDetailBody"></div>
+        </div>
+      </div>
+
+      <!-- Logout confirmation -->
+      <div class="logout-modal" id="logoutModal">
+        <div class="logout-modal-card">
+          <h3>Log out of Aegis?</h3>
+          <p>Are you sure you want to log out? Local offline records will remain encrypted.</p>
+          <div class="logout-modal-actions">
+            <button class="cancel-btn" onclick="hideLogoutConfirm()">Cancel</button>
+            <button class="confirm-btn" onclick="confirmLogout()">Log Out</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Smart Pill Check: temporary, stateless single-scan lookup -->
+      <div class="pc-modal" id="pillCheckModal">
+        <div class="pc-header">
+          <div class="pc-title">Smart Pill Check</div>
+          <button class="pc-close-btn" onclick="closePillCheckModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+
+        <div class="pc-camera-view" id="pcCameraView">
+          <video id="pcVideo" autoplay playsinline muted></video>
+          <canvas id="pcCanvas" style="display:none;"></canvas>
+          <img id="pcCapturedImg" style="display:none;" />
+          <div class="pc-scan-frame"></div>
+          <div class="pc-camera-error" id="pcCameraError">Camera access denied. Please enable camera permissions.</div>
+          <p class="pc-hint">Point the camera at a pill, bottle, or label</p>
+        </div>
+        <div class="pc-capture-bar" id="pcCaptureBar">
+          <button class="pc-capture-btn" onclick="pcCaptureAndProcess()"></button>
+        </div>
+
+        <div class="pc-loading" id="pcLoading">
+          <div class="pc-spinner"></div>
+          <div class="pc-loading-text">Analyzing pill/label...</div>
+        </div>
+
+        <div class="pc-results" id="pcResults">
+          <div class="pc-result-body" id="pcResultBody"></div>
+          <div class="pc-result-actions">
+            <button class="pc-retake-btn" onclick="pcRetake()">Retake</button>
+            <button class="pc-done-btn" onclick="closePillCheckModal()">Close</button>
+          </div>
+        </div>
+        <p class="pc-disclaimer">This is a quick reference only — nothing here is saved to your medications or profile.</p>
       </div>
 
     </div>
@@ -2086,7 +3768,10 @@
 
     function updateApiKeyBtnState() {
       const btn = document.getElementById('apiKeyBtn');
-      if (btn) btn.classList.toggle('custom-key', !!getUserApiKey());
+      if (!btn) return;
+      const hasKey = !!getUserApiKey();
+      btn.classList.toggle('custom-key', hasKey);
+      btn.title = hasKey ? 'Custom API key active for this session' : 'Use your own API key';
     }
 
     function showApiKeyModal() {
@@ -2117,7 +3802,7 @@
       hideApiKeyModal();
     }
 
-    const screenOrder = ['screen-splash','screen-home','screen-scanner','screen-result','screen-review','screen-schedule','screen-schedule-confirm','screen-chat'];
+    const screenOrder = ['screen-splash','screen-onb-carousel','screen-onb-auth','screen-onb-wizard','screen-onb-permissions','screen-onb-complete','screen-home','screen-rx-routine','screen-scanner','screen-result','screen-review','screen-schedule','screen-schedule-confirm','screen-chat'];
     let currentScreenIdx = 0;
 
     function showScreen(id) {
@@ -2146,6 +3831,604 @@
       }
       if (id === 'screen-scanner') { startCamera(); }
       else { stopCamera(); }
+
+      if (id === 'screen-onb-wizard') { onbRestoreWizardState(); }
+      if (id === 'screen-rx-routine') { rxRenderAll(); }
+    }
+
+    // ===================== ONBOARDING FLOW =====================
+    const onbState = {
+      email: '',
+      fullName: '', dob: '', sex: '',
+      goals: [],
+      conditions: [], allergies: [],
+      permissions: { notif: false, biometric: false, sync: false }
+    };
+
+    // --- Step 1: Value prop carousel ---
+    let onbCarouselIndex = 0;
+    const ONB_CARD_COUNT = 3;
+
+    function onbRenderCarousel() {
+      const track = document.getElementById('onbCarouselTrack');
+      track.style.transform = `translateX(-${onbCarouselIndex * 100}%)`;
+      document.querySelectorAll('#onbDots .onb-dot').forEach((d, i) => d.classList.toggle('active', i === onbCarouselIndex));
+      const btn = document.getElementById('onbCarouselBtn');
+      btn.textContent = onbCarouselIndex === ONB_CARD_COUNT - 1 ? 'Continue to Sign In' : 'Next';
+    }
+
+    function onbCarouselNext() {
+      if (onbCarouselIndex < ONB_CARD_COUNT - 1) {
+        onbCarouselIndex++;
+        onbRenderCarousel();
+      } else {
+        showScreen('screen-onb-auth');
+      }
+    }
+
+    function onbSkipCarousel() {
+      showScreen('screen-onb-auth');
+    }
+
+    // Swipe/drag support for the carousel
+    (function initOnbCarouselDrag() {
+      let startX = 0, dragging = false, moved = 0;
+      const track = document.getElementById('onbCarouselTrack');
+      const start = (x) => { dragging = true; startX = x; moved = 0; track.style.transition = 'none'; };
+      const move = (x) => {
+        if (!dragging) return;
+        moved = x - startX;
+        track.style.transform = `translateX(calc(-${onbCarouselIndex * 100}% + ${moved}px))`;
+      };
+      const end = () => {
+        if (!dragging) return;
+        dragging = false;
+        track.style.transition = '';
+        if (moved < -60 && onbCarouselIndex < ONB_CARD_COUNT - 1) onbCarouselIndex++;
+        else if (moved > 60 && onbCarouselIndex > 0) onbCarouselIndex--;
+        onbRenderCarousel();
+      };
+      track.addEventListener('touchstart', e => start(e.touches[0].clientX), { passive: true });
+      track.addEventListener('touchmove', e => move(e.touches[0].clientX), { passive: true });
+      track.addEventListener('touchend', end);
+      track.addEventListener('mousedown', e => start(e.clientX));
+      window.addEventListener('mousemove', e => move(e.clientX));
+      window.addEventListener('mouseup', end);
+    })();
+
+    // --- Step 2: Authentication ---
+    function onbSocialAuth() {
+      // No real OAuth backend in this preview — treat as a successful sign-in.
+      showScreen('screen-onb-wizard');
+    }
+
+    function onbValidateEmail(onBlur) {
+      const field = document.getElementById('onbEmailField');
+      const input = document.getElementById('onbEmailInput');
+      const continueBtn = document.getElementById('onbAuthContinueBtn');
+      const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value.trim());
+      field.classList.toggle('filled', input.value.length > 0);
+      if (onBlur || input.value.length > 0) {
+        field.classList.toggle('error', input.value.length > 0 && !valid);
+      }
+      continueBtn.disabled = !valid;
+      onbState.email = input.value.trim();
+    }
+
+    // --- Step 3: Multi-step wizard ---
+    let onbWizardStep = 1;
+
+    function onbUpdateProgress() {
+      document.getElementById('onbProgSeg1').style.width = onbWizardStep >= 1 ? '100%' : '0%';
+      document.getElementById('onbProgSeg2').style.width = onbWizardStep >= 2 ? '100%' : '0%';
+      document.getElementById('onbProgSeg3').style.width = onbWizardStep >= 3 ? '100%' : '0%';
+    }
+
+    function onbRenderWizardStep() {
+      [1, 2, 3].forEach(n => {
+        document.getElementById('onbStep' + n).style.display = n === onbWizardStep ? '' : 'none';
+      });
+      document.getElementById('onbWizardNextBtn').style.display = onbWizardStep === 3 ? 'none' : '';
+      document.getElementById('onbStep3Actions').style.display = onbWizardStep === 3 ? 'flex' : 'none';
+      onbUpdateProgress();
+      onbValidateStep1();
+    }
+
+    // Step 1 (Basic Info) requires name, DOB, and sex before continuing —
+    // steps 2/3 have no required fields ("select all that apply" / optional).
+    function onbValidateStep1() {
+      const btn = document.getElementById('onbWizardNextBtn');
+      if (onbWizardStep !== 1) { btn.disabled = false; return; }
+      btn.disabled = !(onbState.fullName.trim() && onbState.dob && onbState.sex);
+    }
+
+    function onbWizardNext() {
+      if (onbWizardStep < 3) {
+        onbWizardStep++;
+        onbRenderWizardStep();
+      }
+    }
+
+    function onbWizardBack() {
+      if (onbWizardStep > 1) {
+        onbWizardStep--;
+        onbRenderWizardStep();
+      } else {
+        showScreen('screen-onb-auth');
+      }
+    }
+
+    function onbSaveField(key, val) { onbState[key] = val; onbValidateStep1(); }
+
+    function onbSelectPill(el, group) {
+      el.parentElement.querySelectorAll('.onb-pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      onbState[group] = el.dataset.val;
+      onbValidateStep1();
+    }
+
+    function onbToggleChip(el) {
+      const val = el.dataset.val;
+      const active = el.classList.toggle('active');
+      if (active) {
+        if (!onbState.goals.includes(val)) onbState.goals.push(val);
+      } else {
+        onbState.goals = onbState.goals.filter(g => g !== val);
+      }
+    }
+
+    function onbTagKeydown(event, type) {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      const input = event.target;
+      const val = input.value.trim();
+      if (!val) return;
+      onbState[type].push(val);
+      input.value = '';
+      onbRenderTags(type);
+    }
+
+    function onbRenderTags(type) {
+      const wrap = document.getElementById(type === 'conditions' ? 'onbConditionsWrap' : 'onbAllergiesWrap');
+      const input = wrap.querySelector('input');
+      wrap.querySelectorAll('.onb-tag-pill').forEach(p => p.remove());
+      onbState[type].forEach((tag, i) => {
+        const pill = document.createElement('span');
+        pill.className = 'onb-tag-pill';
+        pill.innerHTML = `${escapeHtml(tag)} <button type="button" onclick="onbRemoveTag('${type}',${i})">&times;</button>`;
+        wrap.insertBefore(pill, input);
+      });
+    }
+
+    function onbRemoveTag(type, i) {
+      onbState[type].splice(i, 1);
+      onbRenderTags(type);
+    }
+
+    function onbRestoreWizardState() {
+      onbWizardStep = 1;
+      document.getElementById('onbNameInput').value = onbState.fullName;
+      document.getElementById('onbDobInput').value = onbState.dob;
+      document.querySelectorAll('#onbSexPills .onb-pill').forEach(p => p.classList.toggle('active', p.dataset.val === onbState.sex));
+      document.querySelectorAll('#onbGoalChips .onb-chip').forEach(c => c.classList.toggle('active', onbState.goals.includes(c.dataset.val)));
+      onbRenderTags('conditions');
+      onbRenderTags('allergies');
+      onbRenderWizardStep();
+    }
+
+    function onbCompleteWizard() {
+      showScreen('screen-onb-permissions');
+    }
+
+    // --- Step 4: Permissions ---
+    function onbTogglePermission(el, key) {
+      const on = el.classList.toggle('on');
+      el.closest('.onb-perm-card').classList.toggle('enabled', on);
+      onbState.permissions[key] = on;
+    }
+
+    function onbCompleteSetup() {
+      showScreen('screen-onb-complete');
+      const statusText = document.getElementById('onbStatusText');
+      const arc = document.getElementById('onbArcFill');
+      arc.style.animation = 'none'; arc.offsetHeight; arc.style.animation = 'onbArcDraw 1.5s ease-in-out forwards';
+      const messages = ['Encrypting your personal space...', 'Configuring AI assistant...', 'Ready!'];
+      statusText.textContent = messages[0];
+      setTimeout(() => statusText.textContent = messages[1], 500);
+      setTimeout(() => statusText.textContent = messages[2], 1050);
+      setTimeout(() => {
+        onbApplyProfileToHome();
+        showScreen('screen-home');
+        onbShowHomeTooltip();
+      }, 1500);
+    }
+
+    // Reflects onboarding answers (currently: name) onto the home screen, and
+    // persists them so a reload doesn't lose the greeting.
+    function onbApplyProfileToHome() {
+      const nameEl = document.querySelector('#screen-home .name');
+      const avatarEl = document.getElementById('homeAvatar');
+      if (onbState.fullName.trim()) {
+        if (nameEl) nameEl.textContent = onbState.fullName.trim();
+        if (avatarEl) avatarEl.textContent = onbInitials(onbState.fullName);
+      }
+      localStorage.setItem('aegis_profile', JSON.stringify({ fullName: onbState.fullName }));
+    }
+
+    // --- Step 5: Home hand-off tooltip ---
+    function onbShowHomeTooltip() {
+      const tooltip = document.getElementById('onbHomeTooltip');
+      if (!tooltip) return;
+      requestAnimationFrame(() => tooltip.classList.add('visible'));
+      setTimeout(() => tooltip.classList.remove('visible'), 5000);
+    }
+
+    function onbDismissTooltip() {
+      const tooltip = document.getElementById('onbHomeTooltip');
+      if (tooltip) tooltip.classList.remove('visible');
+    }
+
+    // ===================== ACCOUNT DRAWER =====================
+    const drawerState = {
+      profile: { legalName: '', preferredName: '', phone: '', secondaryEmail: '', emergencyName: '', emergencyRelation: '', emergencyPhone: '' },
+      medical: { bloodType: '', allergies: [], conditions: [], organDonor: false, physicianPhone: '', showLockScreen: false },
+      devices: { appleHealth: true, googleFit: false, garmin: false, oura: false },
+      records: { labTests: 0, prescriptions: 0, doctorNotes: 0 },
+      ai: { tone: 'Empathetic & Detailed', tempUnit: '°F', weightUnit: 'lbs', glucoseUnit: 'mg/dL', language: 'English' },
+      security: { appLock: false, autoLock: '1 minute', twoFA: false },
+      dataSharing: { retention: '90 days' },
+      reminders: { medication: true, hydration: false, labAppointments: false, dailyCheckins: true },
+      pushNotifs: { critical: true, dailySummaries: true, systemUpdates: false },
+      feedback: { rating: 0, text: '' }
+    };
+
+    function onbInitials(name) {
+      const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+      if (parts.length === 0) return 'SJ';
+      return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+    }
+
+    function openDrawer() {
+      const name = onbState.fullName.trim() || 'Sarah Johnson';
+      const email = onbState.email.trim() || 'sarah.j@example.com';
+      document.getElementById('drawerName').textContent = name;
+      document.getElementById('drawerEmail').textContent = email;
+      document.getElementById('drawerAvatar').textContent = onbInitials(name);
+      drawerGoToMain();
+      document.getElementById('drawerRoot').classList.add('active');
+    }
+    function closeDrawer() { document.getElementById('drawerRoot').classList.remove('active'); }
+
+    // --- Category sub-menu (nested sliding pages within the drawer) ---
+    const DRAWER_CATEGORIES = {
+      health: {
+        title: 'Health Profile & Records',
+        items: [
+          { key: 'medicalId', title: 'Medical ID & Emergency Info', icon: '<path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6zM12 8v8M8 12h8"/>' },
+          { key: 'devices', title: 'Connected Devices & Wearables', icon: '<path d="M7 4h10a1 1 0 011 1v14a1 1 0 01-1 1H7a1 1 0 01-1-1V5a1 1 0 011-1zM11 18h2"/>' },
+          { key: 'records', title: 'Health Records & Documents', icon: '<path d="M6 2h9l5 5v15H6zM15 2v5h5"/>' }
+        ]
+      },
+      ai: {
+        title: 'AI & Preferences',
+        items: [
+          { key: 'aiPersona', title: 'AI Persona & Preferences', icon: '<path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/>' },
+          { key: 'memory', title: 'Memory & History', icon: '<path d="M12 8v4l3 3M12 2a10 10 0 100 20 10 10 0 000-20z"/>' },
+          { key: 'reminders', title: 'Smart Reminders', icon: '<path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/>' },
+          { key: 'pushNotifs', title: 'Push Notification Toggles', icon: '<path d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 00-4-5.7V5a2 2 0 10-4 0v.3A6 6 0 006 11v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>' }
+        ]
+      },
+      security: {
+        title: 'Security & Data',
+        items: [
+          { key: 'security', title: 'Security & Biometrics', icon: '<path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/>' },
+          { key: 'dataSharing', title: 'Data Sharing & Privacy', icon: '<path d="M12 2v20M5 7l7-5 7 5M5 17l7 5 7-5"/>' }
+        ]
+      },
+      support: {
+        title: 'Help & Support',
+        items: [
+          { key: 'help', title: 'Help & Support Center', icon: '<path d="M12 22a10 10 0 100-20 10 10 0 000 20zM9.5 9a2.5 2.5 0 015 .5c0 1.5-2 2-2 3.5M12 17h.01"/>' },
+          { key: 'feedback', title: 'Give Feedback', icon: '<path d="M12 17.3l-6.2 3.3 1.2-6.9L2 8.9l6.9-1L12 1.7l3.1 6.2 6.9 1-5 4.8 1.2 6.9z"/>' },
+          { key: 'legal', title: 'Legal & Terms', icon: '<path d="M9 2h6l5 5v15H4V2h5zM9 2v5H4"/>' }
+        ]
+      }
+    };
+
+    function drawerOpenCategory(catKey) {
+      const cat = DRAWER_CATEGORIES[catKey];
+      document.getElementById('drawerHeadTitle').textContent = cat.title;
+      document.getElementById('drawerSubPage').innerHTML = cat.items.map(item => `
+        <button class="drawer-row" onclick="openDrawerDetail('${item.key}')">
+          <span class="drawer-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${item.icon}</svg></span>
+          <span class="drawer-row-text"><span class="drawer-row-title">${item.title}</span></span>
+          <span class="drawer-row-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>
+        </button>
+      `).join('');
+      document.getElementById('drawerRoot').classList.add('sub-open');
+    }
+    function drawerGoToMain() {
+      document.getElementById('drawerRoot').classList.remove('sub-open');
+      document.getElementById('drawerHeadTitle').textContent = '';
+    }
+
+    function showLogoutConfirm() { document.getElementById('logoutModal').classList.add('active'); }
+    function hideLogoutConfirm() { document.getElementById('logoutModal').classList.remove('active'); }
+    function confirmLogout() {
+      hideLogoutConfirm();
+      closeDrawer();
+      showScreen('screen-splash');
+    }
+
+    // --- Generic detail panel plumbing ---
+    function openDrawerDetail(key) {
+      const def = DRAWER_DETAILS[key];
+      if (!def) return;
+      document.getElementById('drawerDetailTitle').textContent = def.title;
+      document.getElementById('drawerDetailBody').innerHTML = def.render();
+      document.getElementById('drawerDetailRoot').classList.add('active');
+    }
+    function closeDrawerDetail() { document.getElementById('drawerDetailRoot').classList.remove('active'); }
+    function rerenderDrawerDetail(key) {
+      document.getElementById('drawerDetailBody').innerHTML = DRAWER_DETAILS[key].render();
+    }
+
+    function ddToggleSvg() {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>';
+    }
+    function ddPillRow(options, selected, onclickFn) {
+      return `<div class="dd-pill-group">${options.map(o =>
+        `<button type="button" class="dd-pill${o === selected ? ' active' : ''}" onclick="${onclickFn}('${o}')">${o}</button>`
+      ).join('')}</div>`;
+    }
+    function ddToggleBtn(on, onclickFn) {
+      return `<button type="button" class="onb-toggle${on ? ' on' : ''}" onclick="${onclickFn}"></button>`;
+    }
+
+    const DRAWER_DETAILS = {
+      editProfile: {
+        title: 'Edit Profile',
+        render() {
+          const p = drawerState.profile;
+          return `
+            <div class="dd-section-title">Personal Details</div>
+            <div class="onb-field filled"><input class="onb-field-input" value="${escapeHtml(onbState.fullName)}" oninput="onbState.fullName=this.value"><label class="onb-field-label">Legal name</label></div>
+            <div class="onb-field filled"><input class="onb-field-input" value="${escapeHtml(p.preferredName)}" oninput="drawerState.profile.preferredName=this.value"><label class="onb-field-label">Preferred name</label></div>
+            <div class="onb-field filled"><input type="date" class="onb-field-input" value="${escapeHtml(onbState.dob)}" oninput="onbState.dob=this.value"><label class="onb-field-label">Date of birth</label></div>
+            <span class="onb-field-group-label">Biological sex</span>
+            <div class="onb-pill-row">${['Male','Female','Intersex','Prefer not to say'].map(s =>
+              `<button type="button" class="onb-pill${onbState.sex === s ? ' active' : ''}" onclick="onbState.sex='${s}';rerenderDrawerDetail('editProfile')">${s}</button>`).join('')}</div>
+            <div class="dd-section-title">Contact Info</div>
+            <div class="onb-field filled"><input type="tel" class="onb-field-input" value="${escapeHtml(p.phone)}" oninput="drawerState.profile.phone=this.value"><label class="onb-field-label">Phone number</label></div>
+            <div class="onb-field filled"><input type="email" class="onb-field-input" value="${escapeHtml(p.secondaryEmail)}" oninput="drawerState.profile.secondaryEmail=this.value"><label class="onb-field-label">Secondary email</label></div>
+            <div class="dd-section-title">Emergency Contact</div>
+            <div class="onb-field filled"><input class="onb-field-input" value="${escapeHtml(p.emergencyName)}" oninput="drawerState.profile.emergencyName=this.value"><label class="onb-field-label">Name</label></div>
+            <div class="onb-field filled"><input class="onb-field-input" value="${escapeHtml(p.emergencyRelation)}" oninput="drawerState.profile.emergencyRelation=this.value"><label class="onb-field-label">Relationship</label></div>
+            <div class="onb-field filled"><input type="tel" class="onb-field-input" value="${escapeHtml(p.emergencyPhone)}" oninput="drawerState.profile.emergencyPhone=this.value"><label class="onb-field-label">Direct phone</label></div>
+            <button class="dd-btn primary" onclick="document.getElementById('drawerName').textContent=onbState.fullName.trim()||'Sarah Johnson';document.getElementById('drawerAvatar').textContent=onbInitials(onbState.fullName);closeDrawerDetail()">Save Changes</button>
+          `;
+        }
+      },
+      medicalId: {
+        title: 'Medical ID & Emergency Info',
+        render() {
+          const m = drawerState.medical;
+          return `
+            <div class="dd-row-desc">Blood type</div>
+            ${ddPillRow(['A+','A-','B+','B-','AB+','AB-','O+','O-'], m.bloodType, 'ddSetBloodType')}
+            <span class="onb-field-group-label">Registered allergies</span>
+            <div class="onb-tag-input-wrap" onclick="document.getElementById('ddAllergyInput').focus()">
+              ${m.allergies.map((t,i) => `<span class="onb-tag-pill">${escapeHtml(t)} <button type="button" onclick="ddRemoveTag('medical','allergies',${i})">&times;</button></span>`).join('')}
+              <input id="ddAllergyInput" type="text" placeholder="Type and press Enter" onkeydown="ddTagKeydown(event,'medical','allergies')">
+            </div>
+            <span class="onb-field-group-label">Chronic conditions</span>
+            <div class="onb-tag-input-wrap" onclick="document.getElementById('ddConditionInput').focus()">
+              ${m.conditions.map((t,i) => `<span class="onb-tag-pill">${escapeHtml(t)} <button type="button" onclick="ddRemoveTag('medical','conditions',${i})">&times;</button></span>`).join('')}
+              <input id="ddConditionInput" type="text" placeholder="Type and press Enter" onkeydown="ddTagKeydown(event,'medical','conditions')">
+            </div>
+            <div class="dd-toggle-row"><div><div class="dd-row-label">Organ donor</div></div>${ddToggleBtn(m.organDonor, "ddToggle('medical','organDonor')")}</div>
+            <div class="onb-field filled" style="margin-top:16px;"><input type="tel" class="onb-field-input" value="${escapeHtml(m.physicianPhone)}" oninput="drawerState.medical.physicianPhone=this.value"><label class="onb-field-label">Primary physician contact</label></div>
+            <div class="dd-toggle-row"><div><div class="dd-row-label">Show on Lock Screen</div><div class="dd-row-desc" style="margin-bottom:0;">Let emergency responders view this without unlocking.</div></div>${ddToggleBtn(m.showLockScreen, "ddToggle('medical','showLockScreen')")}</div>
+          `;
+        }
+      },
+      devices: {
+        title: 'Connected Devices & Wearables',
+        render() {
+          const d = drawerState.devices;
+          const list = [
+            { key: 'appleHealth', name: 'Apple Health' },
+            { key: 'googleFit', name: 'Google Fit' },
+            { key: 'garmin', name: 'Garmin' },
+            { key: 'oura', name: 'Oura Ring' }
+          ];
+          return list.map(dev => `
+            <div class="dd-device-card">
+              <div class="dd-device-head">
+                <div class="dd-device-name">${dev.name}</div>
+                ${ddToggleBtn(d[dev.key], `ddToggle('devices','${dev.key}')`)}
+              </div>
+              <div class="dd-device-sync">${d[dev.key] ? 'Synced 5 mins ago' : 'Not connected'}</div>
+              ${d[dev.key] ? `<div class="dd-perm-chips">
+                <span class="dd-perm-chip on">Steps</span>
+                <span class="dd-perm-chip on">Heart Rate</span>
+                <span class="dd-perm-chip on">Sleep</span>
+                <span class="dd-perm-chip">Blood Oxygen</span>
+              </div>` : ''}
+            </div>
+          `).join('');
+        }
+      },
+      records: {
+        title: 'Health Records & Documents',
+        render() {
+          const r = drawerState.records;
+          return `
+            <div class="dd-record-cat"><span class="dd-record-cat-name">Lab Tests</span><span class="dd-record-cat-count">${r.labTests} documents</span></div>
+            <div class="dd-record-cat"><span class="dd-record-cat-name">Prescriptions</span><span class="dd-record-cat-count">${r.prescriptions} documents</span></div>
+            <div class="dd-record-cat"><span class="dd-record-cat-name">Doctor Notes</span><span class="dd-record-cat-count">${r.doctorNotes} documents</span></div>
+            <button class="dd-btn primary" style="margin-top:16px;" onclick="ddUploadRecord()">Upload New Document (PDF/Image)</button>
+          `;
+        }
+      },
+      aiPersona: {
+        title: 'AI Persona & Preferences',
+        render() {
+          const a = drawerState.ai;
+          return `
+            <div class="dd-row-label">Response tone</div>
+            ${ddPillRow(['Clinical & Concise','Empathetic & Detailed'], a.tone, 'ddSetTone')}
+            <div class="dd-row-label">Temperature</div>
+            ${ddPillRow(['°C','°F'], a.tempUnit, 'ddSetTempUnit')}
+            <div class="dd-row-label">Weight</div>
+            ${ddPillRow(['kg','lbs'], a.weightUnit, 'ddSetWeightUnit')}
+            <div class="dd-row-label">Glucose</div>
+            ${ddPillRow(['mg/dL','mmol/L'], a.glucoseUnit, 'ddSetGlucoseUnit')}
+            <div class="dd-row-label">Language</div>
+            ${ddPillRow(['English','Spanish','French','Hindi'], a.language, 'ddSetLanguage')}
+          `;
+        }
+      },
+      memory: {
+        title: 'Memory & History',
+        render() {
+          return `
+            <div class="dd-section-title">Recent Sessions</div>
+            <div class="dd-info-row"><span class="dd-row-label" style="margin-bottom:0;">Medication side effects</span><span class="dd-info-value">2 days ago</span></div>
+            <div class="dd-info-row"><span class="dd-row-label" style="margin-bottom:0;">Dietary guidance</span><span class="dd-info-value">5 days ago</span></div>
+            <div class="dd-info-row"><span class="dd-row-label" style="margin-bottom:0;">Allergy interactions</span><span class="dd-info-value">1 week ago</span></div>
+            <button class="dd-btn" style="margin-top:16px;" onclick="alert('Memory topic forgotten.')">Forget my recent dietary query</button>
+            <button class="dd-btn" onclick="if(confirm('Clear all conversation history? This cannot be undone.')) alert('Conversation history cleared.')">Clear Conversation History</button>
+          `;
+        }
+      },
+      security: {
+        title: 'Security & Biometrics',
+        render() {
+          const s = drawerState.security;
+          return `
+            <div class="dd-toggle-row"><div><div class="dd-row-label">App Lock</div><div class="dd-row-desc" style="margin-bottom:0;">Require Face ID / Touch ID / PIN on launch.</div></div>${ddToggleBtn(s.appLock, "ddToggle('security','appLock')")}</div>
+            <div class="dd-row-label" style="margin-top:16px;">Auto-Lock Timer</div>
+            ${ddPillRow(['Immediate','1 minute','5 minutes'], s.autoLock, 'ddSetAutoLock')}
+            <div class="dd-toggle-row"><div><div class="dd-row-label">Two-Factor Authentication</div><div class="dd-row-desc" style="margin-bottom:0;">Manage phone or authenticator app 2FA.</div></div>${ddToggleBtn(s.twoFA, "ddToggle('security','twoFA')")}</div>
+          `;
+        }
+      },
+      dataSharing: {
+        title: 'Data Sharing & Privacy',
+        render() {
+          const d = drawerState.dataSharing;
+          return `
+            <div class="dd-row-label">Export Health Data</div>
+            <div class="dd-row-desc">Generates a secure, password-protected export of all logs and AI conversations.</div>
+            <div style="display:flex; gap:10px; margin-bottom:16px;">
+              <button class="dd-btn" style="margin-bottom:0;" onclick="alert('Preparing password-protected PDF export...')">Export as PDF</button>
+              <button class="dd-btn" style="margin-bottom:0;" onclick="alert('Preparing password-protected JSON export...')">Export as JSON</button>
+            </div>
+            <div class="dd-row-label">Data Retention</div>
+            ${ddPillRow(['30 days','90 days','1 year','Forever'], d.retention, 'ddSetRetention')}
+            <div class="dd-section-title">Compliance</div>
+            <div class="dd-text">All personal health data and AI conversations are encrypted at rest (AES-256) and in transit (TLS 1.3), in line with HIPAA and GDPR data protection requirements. You may request full deletion of your account and data at any time.</div>
+          `;
+        }
+      },
+      reminders: {
+        title: 'Smart Reminders',
+        render() {
+          const r = drawerState.reminders;
+          const rows = [
+            ['medication', 'Medication Intake', 'Morning & evening doses'],
+            ['hydration', 'Hydration Check-ins', 'Every 3 hours'],
+            ['labAppointments', 'Routine Lab Appointments', 'As scheduled'],
+            ['dailyCheckins', 'Daily AI Health Check-ins', 'Every morning at 8:00 AM']
+          ];
+          return rows.map(([key, label, desc]) => `
+            <div class="dd-toggle-row"><div><div class="dd-row-label">${label}</div><div class="dd-row-desc" style="margin-bottom:0;">${desc}</div></div>${ddToggleBtn(r[key], `ddToggle('reminders','${key}')`)}</div>
+          `).join('');
+        }
+      },
+      pushNotifs: {
+        title: 'Push Notification Toggles',
+        render() {
+          const n = drawerState.pushNotifs;
+          const rows = [
+            ['critical', 'Critical Health Alerts', 'Urgent, time-sensitive warnings'],
+            ['dailySummaries', 'Daily Summaries', "A recap of your day's health data"],
+            ['systemUpdates', 'System Updates', 'New features and maintenance notices']
+          ];
+          return rows.map(([key, label, desc]) => `
+            <div class="dd-toggle-row"><div><div class="dd-row-label">${label}</div><div class="dd-row-desc" style="margin-bottom:0;">${desc}</div></div>${ddToggleBtn(n[key], `ddToggle('pushNotifs','${key}')`)}</div>
+          `).join('');
+        }
+      },
+      help: {
+        title: 'Help & Support Center',
+        render() {
+          return `
+            <div class="onb-field filled"><input class="onb-field-input" placeholder=" "><label class="onb-field-label">Search FAQs</label></div>
+            <button class="dd-btn" onclick="alert('Opening issue report form...')">Report an Issue</button>
+            <div class="dd-text">Or reach us directly at <strong>support@aegishealth.app</strong></div>
+          `;
+        }
+      },
+      feedback: {
+        title: 'Give Feedback',
+        render() {
+          const f = drawerState.feedback;
+          return `
+            <div class="dd-row-label">How's your experience with Aegis?</div>
+            <div class="dd-stars">${[1,2,3,4,5].map(n => `<svg class="dd-star${n <= f.rating ? ' on' : ''}" onclick="drawerState.feedback.rating=${n};rerenderDrawerDetail('feedback')" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.3l-6.2 3.3 1.2-6.9L2 8.9l6.9-1L12 1.7l3.1 6.2 6.9 1-5 4.8 1.2 6.9z"/></svg>`).join('')}</div>
+            <textarea class="dd-textarea" placeholder="Tell us about a bug or a feature you'd like to see..." oninput="drawerState.feedback.text=this.value">${escapeHtml(f.text)}</textarea>
+            <button class="dd-btn primary" onclick="alert('Thanks for your feedback!');closeDrawerDetail()">Submit Feedback</button>
+          `;
+        }
+      },
+      legal: {
+        title: 'Legal & Terms',
+        render() {
+          return `
+            <div class="dd-section-title">Terms of Service</div>
+            <div class="dd-text">By using Aegis, you agree to our terms governing acceptable use, account responsibilities, and service availability.</div>
+            <div class="dd-section-title">Privacy Policy</div>
+            <div class="dd-text">We collect only the health data you provide or connect, encrypt it end-to-end, and never sell it to third parties.</div>
+            <div class="dd-section-title">Medical Disclaimer</div>
+            <div class="dd-text">Aegis is an AI assistant and does not replace professional medical advice, diagnosis, or treatment. Always consult a qualified physician for medical concerns.</div>
+          `;
+        }
+      }
+    };
+
+    function ddToggle(section, key) {
+      drawerState[section][key] = !drawerState[section][key];
+      rerenderDrawerDetail(document.querySelector('.drawer-detail-title') ? currentDrawerDetailKey() : '');
+    }
+    function currentDrawerDetailKey() {
+      const title = document.getElementById('drawerDetailTitle').textContent;
+      return Object.keys(DRAWER_DETAILS).find(k => DRAWER_DETAILS[k].title === title);
+    }
+    function ddSetBloodType(v) { drawerState.medical.bloodType = v; rerenderDrawerDetail('medicalId'); }
+    function ddSetTone(v) { drawerState.ai.tone = v; rerenderDrawerDetail('aiPersona'); }
+    function ddSetTempUnit(v) { drawerState.ai.tempUnit = v; rerenderDrawerDetail('aiPersona'); }
+    function ddSetWeightUnit(v) { drawerState.ai.weightUnit = v; rerenderDrawerDetail('aiPersona'); }
+    function ddSetGlucoseUnit(v) { drawerState.ai.glucoseUnit = v; rerenderDrawerDetail('aiPersona'); }
+    function ddSetLanguage(v) { drawerState.ai.language = v; rerenderDrawerDetail('aiPersona'); }
+    function ddSetAutoLock(v) { drawerState.security.autoLock = v; rerenderDrawerDetail('security'); }
+    function ddSetRetention(v) { drawerState.dataSharing.retention = v; rerenderDrawerDetail('dataSharing'); }
+    function ddUploadRecord() {
+      drawerState.records.labTests++;
+      rerenderDrawerDetail('records');
+    }
+    function ddTagKeydown(event, section, key) {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      const val = event.target.value.trim();
+      if (!val) return;
+      drawerState[section][key].push(val);
+      rerenderDrawerDetail('medicalId');
+    }
+    function ddRemoveTag(section, key, i) {
+      drawerState[section][key].splice(i, 1);
+      rerenderDrawerDetail('medicalId');
     }
 
     function switchScanMode(mode) {
@@ -2230,6 +4513,136 @@
       }
       const video = document.getElementById('cameraFeed');
       video.srcObject = null;
+    }
+
+    // ===================== SMART PILL CHECK (temporary, stateless) =====================
+    // Fully independent of the main scanner/schedule pipeline on purpose: nothing
+    // captured or analyzed here is ever written to rxPlan, homeSchedule, or
+    // localStorage — closing the modal discards everything in memory.
+    let pcStream = null;
+
+    async function openPillCheckModal() {
+      const modal = document.getElementById('pillCheckModal');
+      modal.classList.add('active');
+      pcShowCameraView();
+      const video = document.getElementById('pcVideo');
+      const errDiv = document.getElementById('pcCameraError');
+      errDiv.classList.remove('visible');
+      try {
+        pcStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        video.srcObject = pcStream;
+      } catch (err) {
+        console.warn('Camera access denied:', err);
+        errDiv.classList.add('visible');
+      }
+    }
+
+    function closePillCheckModal() {
+      if (pcStream) {
+        pcStream.getTracks().forEach(t => t.stop());
+        pcStream = null;
+      }
+      document.getElementById('pcVideo').srcObject = null;
+      document.getElementById('pcResultBody').innerHTML = '';
+      document.getElementById('pillCheckModal').classList.remove('active');
+    }
+
+    function pcShowCameraView() {
+      document.getElementById('pcCameraView').style.display = 'block';
+      document.getElementById('pcCaptureBar').style.display = 'flex';
+      document.getElementById('pcLoading').classList.remove('active');
+      document.getElementById('pcResults').classList.remove('active');
+      document.getElementById('pcVideo').style.display = 'block';
+      document.getElementById('pcCapturedImg').style.display = 'none';
+    }
+
+    function pcRetake() {
+      pcShowCameraView();
+    }
+
+    async function pcCaptureAndProcess() {
+      const video = document.getElementById('pcVideo');
+      const canvas = document.getElementById('pcCanvas');
+      const capturedImg = document.getElementById('pcCapturedImg');
+      if (!video.srcObject || video.readyState < 2) return;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+
+      capturedImg.src = imageDataUrl;
+      capturedImg.style.display = 'block';
+      video.style.display = 'none';
+      document.getElementById('pcCameraView').style.display = 'none';
+      document.getElementById('pcCaptureBar').style.display = 'none';
+      document.getElementById('pcLoading').classList.add('active');
+
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        document.getElementById('pcLoading').classList.remove('active');
+        alert('API key not configured. Set GEMINI_API_KEY in .env and restart server.');
+        pcShowCameraView();
+        return;
+      }
+
+      const base64Data = imageDataUrl.split(',')[1];
+      try {
+        const systemPrompt = `You are a pharmacology expert. Given an image of a single pill, capsule, or a medicine bottle/label, identify it and return ONLY a raw JSON object (no markdown, no code fences) with this exact structure:
+{
+  "name": "medicine name if identifiable, else best guess or null",
+  "dosage": "e.g. 500mg, or null",
+  "activeIngredients": ["list", "of", "active ingredients"],
+  "allergensWarnings": ["list", "of", "known allergens and warnings, e.g. contains sulfa, avoid if penicillin-allergic, may cause drowsiness"],
+  "foodDisclaimers": ["list", "of", "short food/timing disclaimers, e.g. Take with food", "Avoid grapefruit", "Take on empty stomach"]
+}
+If you cannot identify the pill with confidence, still return your best-guess structure and add a note to allergensWarnings like "Could not confirm identity — verify with a pharmacist." Keep every array item short (under 10 words).`;
+
+        const content = await callGemini(apiKey, systemPrompt, [
+          {
+            role: 'user',
+            parts: [
+              { text: 'Identify this pill/medicine and its allergens, warnings, and food disclaimers.' },
+              { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
+            ]
+          }
+        ], 0.2);
+
+        let jsonStr = content;
+        const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) jsonStr = jsonMatch[1];
+        const result = JSON.parse(jsonStr.trim());
+        pcRenderResults(result);
+      } catch (err) {
+        pcRenderResults({ name: null, dosage: null, activeIngredients: [], allergensWarnings: ['Analysis failed: ' + err.message], foodDisclaimers: [] });
+      }
+      document.getElementById('pcLoading').classList.remove('active');
+      document.getElementById('pcResults').classList.add('active');
+    }
+
+    function pcRenderResults(r) {
+      const tagList = (items, cls) => items && items.length
+        ? `<div class="pc-tag-list">${items.map(i => `<span class="pc-tag ${cls}">${escapeHtml(i)}</span>`).join('')}</div>`
+        : `<p class="pc-empty-note">None identified</p>`;
+
+      document.getElementById('pcResultBody').innerHTML = `
+        <div class="pc-pill-name">${escapeHtml(r.name || 'Unidentified pill')}</div>
+        ${r.dosage ? `<div class="pc-pill-sub">${escapeHtml(r.dosage)}</div>` : ''}
+        <div class="pc-result-section">
+          <div class="pc-result-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg>Active Ingredients</div>
+          ${tagList(r.activeIngredients, '')}
+        </div>
+        <div class="pc-result-section">
+          <div class="pc-result-heading warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Known Allergens &amp; Warnings</div>
+          ${tagList(r.allergensWarnings, 'warn')}
+        </div>
+        <div class="pc-result-section">
+          <div class="pc-result-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>Food Disclaimers</div>
+          ${tagList(r.foodDisclaimers, 'food')}
+        </div>
+      `;
     }
 
     function setLoadStep(step, state) {
@@ -3217,6 +5630,278 @@ Rules:
       });
 
       container.innerHTML = html;
+      rxSyncFromSlots(slots);
+    }
+
+    // ===================== PRESCRIPTION & ROUTINE =====================
+    let rxPlan = {
+      source: 'Prescribed by Dr. Sarah Jenkins, MD',
+      sourceDate: 'Sep 20, 2026',
+      medicines: [
+        { id: 1, name: 'Omeprazole', dosage: '20mg', frequency: '1 capsule — take on an empty stomach, before breakfast', time: '07:00', taken: false },
+        { id: 2, name: 'Amoxicillin', dosage: '500mg', frequency: '1 capsule — take with food and a full glass of water', time: '08:00', taken: false },
+        { id: 3, name: 'Amoxicillin', dosage: '500mg', frequency: '1 capsule — take with lunch/food', time: '14:00', taken: false },
+        { id: 4, name: 'Amoxicillin', dosage: '500mg', frequency: '1 capsule — take with dinner/night snack', time: '20:00', taken: false },
+        { id: 5, name: 'Metformin', dosage: '500mg', frequency: '1 tablet — take immediately after dinner', time: '20:30', taken: false }
+      ]
+    };
+    let rxNextId = 6;
+    let rxEditingId = null;
+
+    function rxPeriodFromTime(timeStr) {
+      const hour = parseInt((timeStr || '08:00').split(':')[0], 10);
+      if (hour < 12) return { period: 'morning', color: '#F59E0B', dot: 'green' };
+      if (hour < 17) return { period: 'afternoon', color: '#3B82F6', dot: 'blue' };
+      return { period: 'night', color: '#8B5CF6', dot: 'purple' };
+    }
+    function rxFormatTime(timeStr) {
+      const parts = (timeStr || '08:00').split(':');
+      let hour = parseInt(parts[0], 10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      if (hour > 12) hour -= 12;
+      if (hour === 0) hour = 12;
+      return hour + ':' + parts[1] + ' ' + ampm;
+    }
+
+    function rxSaveState() {
+      localStorage.setItem('aegis_rx_plan', JSON.stringify(rxPlan));
+    }
+    function rxLoadState() {
+      const saved = JSON.parse(localStorage.getItem('aegis_rx_plan') || 'null');
+      if (saved && Array.isArray(saved.medicines)) {
+        rxPlan = saved;
+        rxNextId = Math.max(0, ...rxPlan.medicines.map(m => m.id)) + 1;
+      }
+    }
+    // Called whenever a real scan is confirmed via the existing scan->schedule
+    // flow, so the Active Plan list and Home's Today's Medications stay one
+    // source of truth instead of drifting apart.
+    function rxSyncFromSlots(slots) {
+      const meds = [];
+      slots.forEach(slot => {
+        slot.medications.forEach(med => {
+          meds.push({ id: rxNextId++, name: med.name, dosage: med.dosage || '', frequency: med.instruction || '', time: slot.time || '08:00' });
+        });
+      });
+      rxPlan = { source: 'Scanned prescription', sourceDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), medicines: meds };
+      rxSaveState();
+    }
+
+    function rxRenderAll() {
+      document.getElementById('rxSourceTitle').textContent = rxPlan.source;
+      document.getElementById('rxSourceSub').textContent = rxPlan.sourceDate;
+      rxRenderMedList();
+      rxRenderHomeFromPlan();
+    }
+
+    function rxRenderMedList() {
+      const list = document.getElementById('rxMedList');
+      const sorted = [...rxPlan.medicines].sort((a, b) => a.time.localeCompare(b.time));
+      if (sorted.length === 0) {
+        list.innerHTML = '<p style="text-align:center;color:#94A3B8;font-size:13px;padding:20px 0;">No medicines in your active plan.</p>';
+        return;
+      }
+      list.innerHTML = sorted.map(med => {
+        const p = rxPeriodFromTime(med.time);
+        return `
+          <div class="rx-med-card">
+            <div class="rx-med-dot" style="background:${p.color};"></div>
+            <div class="rx-med-info">
+              <div class="rx-med-name">${escapeHtml(med.name)}${med.dosage ? ' ' + escapeHtml(med.dosage) : ''}</div>
+              <div class="rx-med-meta">${escapeHtml(med.frequency || '')} · ${rxFormatTime(med.time)}</div>
+            </div>
+            <div class="rx-med-actions">
+              <button class="rx-icon-btn" onclick="rxShowEditModal(${med.id})" title="Edit">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>
+              </button>
+              <button class="rx-icon-btn delete" onclick="rxDeleteMedicine(${med.id})" title="Remove">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Groups medicines into the three fixed daily blocks (Morning/Afternoon/Night)
+    // rather than by exact clock time, so e.g. a 7:00 and an 8:00 medicine both
+    // land in one "Morning" card together.
+    function rxBuildPeriodGroups(medicines) {
+      const buckets = { morning: [], afternoon: [], night: [] };
+      medicines.forEach(med => {
+        const p = rxPeriodFromTime(med.time);
+        buckets[p.period].push({ med, color: p.color });
+      });
+      Object.values(buckets).forEach(arr => arr.sort((a, b) => a.med.time.localeCompare(b.med.time)));
+      return buckets;
+    }
+
+    function rxRenderMedGroupsHtml(buckets, interactive) {
+      const order = ['morning', 'afternoon', 'night'];
+      const labels = { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' };
+      let html = '';
+      order.forEach(period => {
+        const items = buckets[period];
+        if (!items || items.length === 0) return;
+        const color = items[0].color;
+        const rows = items.map(({ med, color }) => `
+          <div class="med-row">
+            <div class="med-dot" style="background:${color};"></div>
+            <div class="med-info">
+              <div class="med-name">${escapeHtml(med.name)}${med.dosage ? ' ' + escapeHtml(med.dosage) : ''} <span style="font-weight:400;color:#94A3B8;">· ${rxFormatTime(med.time)}</span></div>
+              <div class="med-time">${escapeHtml(med.frequency || '')}</div>
+            </div>
+            <div class="med-check${med.taken ? ' done' : ''}"${interactive ? ` onclick="rxToggleTaken(${med.id})" style="cursor:pointer;"` : ''}>
+              ${med.taken ? '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>' : ''}
+            </div>
+          </div>
+        `).join('');
+        html += `<div class="today-card"><div class="label" style="color:${color};">${labels[period]}</div>${rows}</div>`;
+      });
+      return html || '<p style="text-align:center;color:#94A3B8;font-size:13px;padding:16px 0;">No medicines scheduled.</p>';
+    }
+
+    function rxToggleTaken(id) {
+      const med = rxPlan.medicines.find(m => m.id === id);
+      if (!med) return;
+      med.taken = !med.taken;
+      rxSaveState();
+      rxRenderHomeFromPlan();
+    }
+
+    function rxRenderHomeFromPlan() {
+      const container = document.getElementById('homeSchedule');
+      if (!container) return;
+      container.innerHTML = rxRenderMedGroupsHtml(rxBuildPeriodGroups(rxPlan.medicines), true);
+    }
+
+    function rxSwitchTab(tab) {
+      document.getElementById('rxTabBtnActive').classList.toggle('active', tab === 'active');
+      document.getElementById('rxTabBtnCalendar').classList.toggle('active', tab === 'calendar');
+      document.getElementById('rxTabActive').classList.toggle('active', tab === 'active');
+      document.getElementById('rxTabCalendar').classList.toggle('active', tab === 'calendar');
+      if (tab === 'calendar') rxCalRender();
+    }
+
+    function rxDeleteMedicine(id) {
+      rxPlan.medicines = rxPlan.medicines.filter(m => m.id !== id);
+      rxSaveState();
+      rxRenderAll();
+    }
+
+    function rxShowEditModal(id) {
+      const med = rxPlan.medicines.find(m => m.id === id);
+      if (!med) return;
+      rxEditingId = id;
+      document.getElementById('rxEditDosage').value = med.dosage || '';
+      document.getElementById('rxEditTime').value = med.time || '08:00';
+      document.getElementById('rxEditModal').classList.add('active');
+    }
+    function rxHideEditModal() { document.getElementById('rxEditModal').classList.remove('active'); }
+    function rxSaveEdit() {
+      const med = rxPlan.medicines.find(m => m.id === rxEditingId);
+      if (med) {
+        med.dosage = document.getElementById('rxEditDosage').value.trim();
+        med.time = document.getElementById('rxEditTime').value || med.time;
+        rxSaveState();
+        rxRenderAll();
+      }
+      rxHideEditModal();
+    }
+
+    function rxShowAddMedicine() {
+      document.getElementById('rxAddName').value = '';
+      document.getElementById('rxAddDosage').value = '';
+      document.getElementById('rxAddFrequency').value = '';
+      document.getElementById('rxAddTime').value = '08:00';
+      document.getElementById('rxAddModal').classList.add('active');
+    }
+    function rxHideAddModal() { document.getElementById('rxAddModal').classList.remove('active'); }
+    function rxSaveAdd() {
+      const name = document.getElementById('rxAddName').value.trim();
+      if (!name) return;
+      rxPlan.medicines.push({
+        id: rxNextId++,
+        name,
+        dosage: document.getElementById('rxAddDosage').value.trim(),
+        frequency: document.getElementById('rxAddFrequency').value.trim(),
+        time: document.getElementById('rxAddTime').value || '08:00'
+      });
+      rxSaveState();
+      rxRenderAll();
+      rxHideAddModal();
+    }
+
+    function rxShowClearAllConfirm() { document.getElementById('rxClearAllModal').classList.add('active'); }
+    function rxHideClearAllConfirm() { document.getElementById('rxClearAllModal').classList.remove('active'); }
+    function rxConfirmClearAll() {
+      rxPlan.medicines = [];
+      rxSaveState();
+      rxRenderAll();
+      rxHideClearAllConfirm();
+    }
+
+    function rxReplaceRx() {
+      showScreen('screen-scanner');
+      switchScanMode('rx');
+    }
+
+    // --- Calendar tab ---
+    let rxCalDate = new Date();
+    let rxCalSelected = new Date();
+
+    function rxCalAdherence(day, month, year) {
+      const d = new Date(year, month, day);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      if (d > today) return null;
+      // Deterministic pseudo-random demo adherence per day.
+      const seed = (day * 31 + month * 7 + year) % 5;
+      if (seed === 0) return 'amber';
+      return 'green';
+    }
+
+    function rxCalRender() {
+      const year = rxCalDate.getFullYear();
+      const month = rxCalDate.getMonth();
+      document.getElementById('rxCalMonthLabel').textContent = rxCalDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const today = new Date();
+      const dows = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+      let html = dows.map(d => `<div class="rx-cal-dow">${d}</div>`).join('');
+      for (let i = 0; i < firstDay; i++) html += '<div class="rx-cal-day empty"></div>';
+      for (let day = 1; day <= daysInMonth; day++) {
+        const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+        const isSelected = day === rxCalSelected.getDate() && month === rxCalSelected.getMonth() && year === rxCalSelected.getFullYear();
+        const adherence = rxCalAdherence(day, month, year);
+        html += `<button class="rx-cal-day${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}" onclick="rxSelectDay(${day},${month},${year})">
+          <span>${day}</span>${adherence ? `<span class="rx-cal-dot ${adherence}"></span>` : '<span style="height:5px;"></span>'}
+        </button>`;
+      }
+      document.getElementById('rxCalGrid').innerHTML = html;
+      rxRenderDayPreview();
+    }
+
+    function rxCalNav(delta) {
+      rxCalDate = new Date(rxCalDate.getFullYear(), rxCalDate.getMonth() + delta, 1);
+      rxCalRender();
+    }
+
+    function rxSelectDay(day, month, year) {
+      rxCalSelected = new Date(year, month, day);
+      rxCalRender();
+    }
+
+    function rxRenderDayPreview() {
+      const isToday = rxCalSelected.toDateString() === new Date().toDateString();
+      document.getElementById('rxDayPreviewTitle').textContent =
+        (isToday ? "Today's schedule" : rxCalSelected.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) + ' schedule');
+      // Same multi-slot Morning/Afternoon/Night structure previews automatically
+      // for any selected day, including future ones — only today's is interactive.
+      document.getElementById('rxDayPreviewList').innerHTML =
+        rxRenderMedGroupsHtml(rxBuildPeriodGroups(rxPlan.medicines), isToday);
     }
 
     function showToast(msg) {
@@ -3335,734 +6020,39 @@ Be brief and direct:
       return html;
     }
 
-    // ===================== 3D SPLASH: ANIMATED CADUCEUS =====================
-    // Builds a rod + double-helix twin snakes + sphere + wings + shield entirely
-    // as real WebGL 3D geometry (not a flat animation), then hands off to the
-    // AEGIS title/subtitle/button. Falls back to the plain title/button (no
-    // canvas) if WebGL/Three.js isn't available, so the splash never renders blank.
-    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-    function easeOutBack(t) {
-      const c1 = 1.70158, c3 = c1 + 1;
-      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-    }
-    function clamp01(t) { return Math.max(0, Math.min(1, t)); }
-
-    // No external HDR file is available, so this paints a simple 6-face studio
-    // environment (a dark gradient per face plus a couple of bright "softbox"
-    // rectangles) and runs it through PMREMGenerator — the standard way to give
-    // PBR materials real reflections/highlights without a real HDR asset. Applied
-    // via scene.environment so every metallic material benefits at once.
-    function makeStudioEnvironment(THREE, renderer) {
-      const size = 128;
-      function face(draw) {
-        const c = document.createElement('canvas');
-        c.width = size; c.height = size;
-        const ctx = c.getContext('2d');
-        const grad = ctx.createLinearGradient(0, 0, 0, size);
-        grad.addColorStop(0, '#1b2735');
-        grad.addColorStop(1, '#05080c');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, size, size);
-        if (draw) draw(ctx);
-        return c;
-      }
-      const softbox = (ctx, x, y, w, h, color) => { ctx.fillStyle = color; ctx.fillRect(x, y, w, h); };
-      const faces = [
-        face(ctx => softbox(ctx, 15, 25, 55, 75, '#9fb6c9')),
-        face(ctx => softbox(ctx, 55, 15, 50, 65, '#93a8bd')),
-        face(null),
-        face(null),
-        face(ctx => softbox(ctx, 30, 35, 65, 55, '#a8bdd0')),
-        face(null)
-      ];
-      const cubeTex = new THREE.CubeTexture(faces);
-      cubeTex.needsUpdate = true;
-      const pmrem = new THREE.PMREMGenerator(renderer);
-      const envRT = pmrem.fromCubemap(cubeTex);
-      pmrem.dispose();
-      return envRT.texture;
-    }
-
-    // Procedural canvas textures — flat MeshStandardMaterial colors read as plain
-    // plastic; painting light/dark detail directly into a texture (scales, feather
-    // barbs) sells "detailed and textured" without needing external image assets.
-    const SNAKE_SCALE_W = 34, SNAKE_SCALE_H = 24;
-
-    function drawScaleGrid(ctx, w, h, paintScale) {
-      for (let row = -1; row * SNAKE_SCALE_H < h + SNAKE_SCALE_H; row++) {
-        const offsetX = (row % 2) ? SNAKE_SCALE_W / 2 : 0;
-        for (let col = -1; col * SNAKE_SCALE_W < w + SNAKE_SCALE_W; col++) {
-          const cx = col * SNAKE_SCALE_W + offsetX + SNAKE_SCALE_W / 2;
-          const cy = row * SNAKE_SCALE_H + SNAKE_SCALE_H / 2;
-          paintScale(cx, cy, row, col);
-        }
-      }
-    }
-
-    // Blackened, forged-iron rod: a mottled/streaked pattern for both a subtle color
-    // map (tonal variation, not a flat single gray) and a bump map (real wear/scratch
-    // relief), instead of the smooth uniform chrome-like cylinder from before.
-    function makeMetalWearTexture(THREE, isBump) {
-      const w = 64, h = 256;
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = isBump ? '#808080' : '#26262a';
-      ctx.fillRect(0, 0, w, h);
-      const blotches = 90;
-      for (let i = 0; i < blotches; i++) {
-        const x = Math.random() * w, y = Math.random() * h;
-        const r = 3 + Math.random() * 10;
-        const lighter = Math.random() > 0.5;
-        ctx.beginPath();
-        ctx.ellipse(x, y, r, r * (0.4 + Math.random() * 0.5), Math.random() * Math.PI, 0, Math.PI * 2);
-        ctx.fillStyle = isBump
-          ? (lighter ? 'rgba(200,200,200,0.35)' : 'rgba(60,60,60,0.35)')
-          : (lighter ? 'rgba(90,90,95,0.3)' : 'rgba(10,10,12,0.35)');
-        ctx.fill();
-      }
-      // A few longer vertical scratch streaks
-      ctx.strokeStyle = isBump ? 'rgba(230,230,230,0.4)' : 'rgba(120,120,125,0.25)';
-      ctx.lineWidth = 1;
-      for (let i = 0; i < 18; i++) {
-        const x = Math.random() * w;
-        const y0 = Math.random() * h;
-        ctx.beginPath();
-        ctx.moveTo(x, y0);
-        ctx.lineTo(x + (Math.random() - 0.5) * 6, y0 + 15 + Math.random() * 40);
-        ctx.stroke();
-      }
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.wrapS = THREE.RepeatWrapping;
-      tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(2, 6);
-      return tex;
-    }
-
-    function makeSnakeScaleTexture(THREE, colorHex) {
-      // Bigger, higher-contrast scales than the first attempt — that version used
-      // small (18x13) low-contrast scales tiled densely, which just blurred into a
-      // flat color at the size this actually renders at. Fewer, bolder scales read
-      // clearly even small; the bump map below is what really sells the relief.
-      //
-      // Each scale also gets a random hue pick between a blue-green tone and a
-      // bronze/warm tone (not just a light/dark checker of one hue) — an
-      // "iridescent, some blue-green, some bronze" look instead of flat single-tone
-      // scales.
-      const w = 128, h = 256;
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      const base = new THREE.Color(colorHex);
-      ctx.fillStyle = '#' + base.getHexString();
-      ctx.fillRect(0, 0, w, h);
-      const blueGreen = base.clone().lerp(new THREE.Color(0x0d9488), 0.6);
-      const bronze = base.clone().lerp(new THREE.Color(0x8a6a2e), 0.55);
-      const light = base.clone().lerp(new THREE.Color(0xffffff), 0.4);
-      drawScaleGrid(ctx, w, h, (cx, cy, row, col) => {
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, SNAKE_SCALE_W / 2 - 1.5, SNAKE_SCALE_H / 2 - 1.5, 0, Math.PI, 0);
-        ctx.closePath();
-        const roll = Math.random();
-        const tone = roll < 0.4 ? blueGreen : roll < 0.75 ? bronze : light;
-        ctx.fillStyle = '#' + tone.getHexString();
-        ctx.globalAlpha = 0.55;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+    // ===================== SPLASH: 2s image + text entrance =====================
+    // Logo fade+scale and text/button slide-up all run as CSS keyframes fired on
+    // page load — no per-frame JS needed. A tap just fast-forwards them to their
+    // end state.
+    function initSplash2D() {
+      const splashScreen = document.getElementById('screen-splash');
+      if (!splashScreen) return;
+      splashScreen.addEventListener('click', () => {
+        splashScreen.querySelectorAll('.splash-logo-half, .splash-title-3d, .splash-subtitle-3d, .splash-btn-wrap')
+          .forEach(el => { el.style.animationDuration = '0.01s'; el.style.animationDelay = '0s'; });
       });
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.wrapS = THREE.RepeatWrapping;
-      tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(2, 7);
-      return tex;
-    }
-
-    function makeSnakeBumpTexture(THREE) {
-      // A real bump map (not just painted color) so each scale actually catches
-      // light as a small raised dome — this is what makes the texture visible as
-      // physical relief rather than a flat printed pattern.
-      const w = 128, h = 256;
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#808080';
-      ctx.fillRect(0, 0, w, h);
-      drawScaleGrid(ctx, w, h, (cx, cy) => {
-        const r = SNAKE_SCALE_W / 2 - 1.5;
-        const grad = ctx.createRadialGradient(cx, cy - r * 0.3, 1, cx, cy, r);
-        grad.addColorStop(0, '#f2f2f2');
-        grad.addColorStop(1, '#2a2a2a');
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, r, SNAKE_SCALE_H / 2 - 1.5, 0, Math.PI, 0);
-        ctx.closePath();
-        ctx.fillStyle = grad;
-        ctx.fill();
-      });
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.wrapS = THREE.RepeatWrapping;
-      tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(2, 7);
-      return tex;
-    }
-
-    // Irregular polygon "plates" (jittered grid cells) for the head — real snake
-    // heads have larger, irregular scutes distinct from the small uniform body
-    // scales, which is a lot of what makes a head read as a head in the reference
-    // photo rather than more of the same body texture.
-    function drawHeadPlates(ctx, w, h, paint) {
-      const cols = 7, rows = 7;
-      const cellW = w / cols, cellH = h / rows;
-      const pts = [];
-      for (let r = 0; r <= rows; r++) {
-        pts[r] = [];
-        for (let c = 0; c <= cols; c++) {
-          const edge = (r === 0 || r === rows || c === 0 || c === cols);
-          const jitter = edge ? 0.15 : 0.5;
-          pts[r][c] = [
-            c * cellW + (Math.random() - 0.5) * cellW * jitter,
-            r * cellH + (Math.random() - 0.5) * cellH * jitter
-          ];
-        }
-      }
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const p0 = pts[r][c], p1 = pts[r][c + 1], p2 = pts[r + 1][c + 1], p3 = pts[r + 1][c];
-          paint(p0, p1, p2, p3, r, c);
-        }
-      }
-    }
-
-    function makeSnakeHeadTexture(THREE, colorHex) {
-      const w = 256, h = 256;
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      const base = new THREE.Color(colorHex);
-      const pale = base.clone().lerp(new THREE.Color(0xf5f4f0), 0.65);
-      ctx.fillStyle = '#' + pale.getHexString();
-      ctx.fillRect(0, 0, w, h);
-      const light = pale.clone().lerp(new THREE.Color(0xffffff), 0.35);
-      const dark = pale.clone().lerp(new THREE.Color(0x000000), 0.3);
-      drawHeadPlates(ctx, w, h, (p0, p1, p2, p3, r, c) => {
-        ctx.beginPath();
-        ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.lineTo(p3[0], p3[1]);
-        ctx.closePath();
-        ctx.fillStyle = '#' + ((r + c) % 2 === 0 ? light : dark).getHexString();
-        ctx.globalAlpha = 0.55;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = 'rgba(15,15,15,0.55)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      });
-      return new THREE.CanvasTexture(canvas);
-    }
-
-    function makeSnakeHeadBumpTexture(THREE) {
-      const w = 256, h = 256;
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#808080';
-      ctx.fillRect(0, 0, w, h);
-      drawHeadPlates(ctx, w, h, (p0, p1, p2, p3) => {
-        const cx = (p0[0] + p1[0] + p2[0] + p3[0]) / 4, cy = (p0[1] + p1[1] + p2[1] + p3[1]) / 4;
-        const r = Math.max(8, (Math.hypot(p2[0] - p0[0], p2[1] - p0[1])) / 2);
-        const grad = ctx.createRadialGradient(cx, cy - r * 0.25, 1, cx, cy, r);
-        grad.addColorStop(0, '#e8e8e8');
-        grad.addColorStop(1, '#383838');
-        ctx.beginPath();
-        ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.lineTo(p3[0], p3[1]);
-        ctx.closePath();
-        ctx.fillStyle = grad;
-        ctx.fill();
-      });
-      return new THREE.CanvasTexture(canvas);
-    }
-
-    function makeSnakeEyeTexture(THREE) {
-      // A gold/amber iris with a vertical slit pupil, like the reference photo —
-      // unlit (MeshBasicMaterial) so it reads clearly regardless of lighting angle.
-      const size = 64;
-      const canvas = document.createElement('canvas');
-      canvas.width = size; canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      const cx = size / 2, cy = size / 2;
-      ctx.fillStyle = '#1a1408';
-      ctx.fillRect(0, 0, size, size);
-      const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, size / 2 - 2);
-      grad.addColorStop(0, '#f3d94a');
-      grad.addColorStop(0.55, '#c99a1e');
-      grad.addColorStop(1, '#5c4712');
-      ctx.beginPath(); ctx.arc(cx, cy, size / 2 - 3, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
-      ctx.fillStyle = '#0a0805';
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, size * 0.075, size * 0.3, 0, 0, Math.PI * 2);
-      ctx.fill();
-      return new THREE.CanvasTexture(canvas);
-    }
-
-    // TubeGeometry only takes one constant radius for its whole length — a real
-    // snake body tapers (thin near the head/tail, thicker mid-body), so this
-    // manually builds tube rings using Frenet frames, with per-ring radius from
-    // radiusFn(t), the same way TubeGeometry does internally minus the constant-
-    // radius limitation.
-    function buildTaperedTubeGeometry(THREE, curve, tubularSegments, radialSegments, radiusFn) {
-      const frames = curve.computeFrenetFrames(tubularSegments, false);
-      const positions = [], normals = [], uvs = [], indices = [];
-
-      for (let i = 0; i <= tubularSegments; i++) {
-        const t = i / tubularSegments;
-        const point = curve.getPoint(t);
-        const normal = frames.normals[i];
-        const binormal = frames.binormals[i];
-        const r = radiusFn(t);
-        for (let j = 0; j <= radialSegments; j++) {
-          const v = (j / radialSegments) * Math.PI * 2;
-          const sin = Math.sin(v), cos = -Math.cos(v);
-          const nx = cos * normal.x + sin * binormal.x;
-          const ny = cos * normal.y + sin * binormal.y;
-          const nz = cos * normal.z + sin * binormal.z;
-          positions.push(point.x + r * nx, point.y + r * ny, point.z + r * nz);
-          normals.push(nx, ny, nz);
-          uvs.push(i / tubularSegments, j / radialSegments);
-        }
-      }
-
-      for (let i = 1; i <= tubularSegments; i++) {
-        for (let j = 1; j <= radialSegments; j++) {
-          const a = (radialSegments + 1) * (i - 1) + (j - 1);
-          const b = (radialSegments + 1) * i + (j - 1);
-          const c = (radialSegments + 1) * i + j;
-          const d = (radialSegments + 1) * (i - 1) + j;
-          indices.push(a, b, d, b, c, d);
-        }
-      }
-
-      const geo = new THREE.BufferGeometry();
-      geo.setIndex(indices);
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-      geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-      return geo;
-    }
-
-    function drawFeatherBarbs(ctx, w, h, shaftStyle, shaftWidth, barbStyle, barbWidth) {
-      ctx.strokeStyle = shaftStyle;
-      ctx.lineWidth = shaftWidth;
-      ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
-      ctx.strokeStyle = barbStyle;
-      ctx.lineWidth = barbWidth;
-      for (let y = 6; y < h; y += 9) {
-        const reach = 14 + (y / h) * 12;
-        ctx.beginPath(); ctx.moveTo(w / 2, y); ctx.lineTo(w / 2 - reach, y - reach * 0.75); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(w / 2, y); ctx.lineTo(w / 2 + reach, y - reach * 0.75); ctx.stroke();
-      }
-    }
-
-    function makeFeatherTexture(THREE, colorHex) {
-      const w = 128, h = 128;
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      const base = new THREE.Color(colorHex);
-      ctx.fillStyle = '#' + base.getHexString();
-      ctx.fillRect(0, 0, w, h);
-      drawFeatherBarbs(ctx, w, h, 'rgba(0,0,0,0.55)', 4, 'rgba(0,0,0,0.35)', 2);
-      return new THREE.CanvasTexture(canvas);
-    }
-
-    function makeFeatherBumpTexture(THREE) {
-      const w = 128, h = 128;
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#808080';
-      ctx.fillRect(0, 0, w, h);
-      drawFeatherBarbs(ctx, w, h, '#dadada', 3, '#3a3a3a', 2.2);
-      return new THREE.CanvasTexture(canvas);
-    }
-
-    function buildShieldShape(THREE) {
-      const s = new THREE.Shape();
-      s.moveTo(0, 1.05);
-      s.bezierCurveTo(0.55, 0.85, 0.85, 0.75, 0.85, 0.35);
-      s.bezierCurveTo(0.85, -0.35, 0.55, -0.85, 0, -1.15);
-      s.bezierCurveTo(-0.55, -0.85, -0.85, -0.35, -0.85, 0.35);
-      s.bezierCurveTo(-0.85, 0.75, -0.55, 0.85, 0, 1.05);
-      return s;
-    }
-
-    function buildFeatherShape(THREE, length, width) {
-      // One pointed feather blade: narrow at the base, widest a bit past the middle,
-      // tapering to a point at the tip — a fan of these reads as an actual wing far
-      // more convincingly than trying to fake feathers with one scalloped outline.
-      const s = new THREE.Shape();
-      s.moveTo(0, 0);
-      s.quadraticCurveTo(width, length * 0.42, 0, length);
-      s.quadraticCurveTo(-width, length * 0.42, 0, 0);
-      return s;
-    }
-
-    function buildWingGroup(THREE, color) {
-      // Fat, overlapping feather blades (length:width ~3:1) packed into a tight fan —
-      // the first attempt used thin length:width ~10:1 blades spread wide apart, which
-      // read as spiky rays instead of a solid wing silhouette like the reference image.
-      const wing = new THREE.Group();
-      // Low metalness on purpose: with no environment map for reflections, a
-      // moderately metallic MeshStandardMaterial derives little of its look from
-      // the diffuse map (PBR conductors are mostly specular), so the feather
-      // texture was barely visible at metalness 0.35 — this also happens to be
-      // the matte look asked for, not just the texture-visibility fix.
-      const mat = new THREE.MeshStandardMaterial({
-        map: makeFeatherTexture(THREE, color),
-        bumpMap: makeFeatherBumpTexture(THREE), bumpScale: 0.045,
-        metalness: 0.1, roughness: 0.6, side: THREE.DoubleSide
-      });
-      const FEATHER_COUNT = 5;
-      for (let i = 0; i < FEATHER_COUNT; i++) {
-        const t = i / (FEATHER_COUNT - 1); // 0 = topmost/longest feather, 1 = bottommost/shortest
-        const length = 1.55 - t * 0.55;
-        const width = 0.42 - t * 0.1;
-        const geo = new THREE.ExtrudeGeometry(buildFeatherShape(THREE, length, width), { depth: 0.025, bevelEnabled: false });
-        const feather = new THREE.Mesh(geo, mat);
-        // -80deg..-130deg: a feather shape points along local +Y by default, so this
-        // range sweeps the fan to point mostly outward (+X) — slightly upward for the
-        // top/longest feather, slightly downward for the bottom/shortest one. The
-        // previous -8deg..+42deg range kept everything near-vertical, which pointed the
-        // whole fan straight up into a "crown" instead of outward into a wing.
-        feather.rotation.z = THREE.MathUtils.degToRad(-80 - t * 50);
-        feather.position.z = -t * 0.02; // slight layering so lower feathers sit behind
-        wing.add(feather);
-      }
-      return wing;
-    }
-
-
-    function initSplash3D() {
-      const canvas = document.getElementById('splashCanvas');
-      const content = document.getElementById('splashContent');
-      const flashEl = document.getElementById('splashFlash');
-      if (!canvas || !content) return;
-
-      function revealContent() {
-        content.classList.add('revealed');
-      }
-
-      if (typeof THREE === 'undefined') {
-        // Library failed to load (offline, CDN blocked, etc.) — skip straight
-        // to the end state so the splash screen is still usable.
-        revealContent();
-        return;
-      }
-
-      let renderer;
-      try {
-        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-      } catch (err) {
-        console.warn('WebGL unavailable, falling back to static splash:', err);
-        revealContent();
-        return;
-      }
-
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-      // Pulled back further than the logo's own size requires so it reads as a
-      // compact, centered emblem occupying roughly the upper half of the screen,
-      // leaving clear room below for the title/subtitle/button — not a shape that
-      // fills the frame and has to be shrunk-and-shifted afterward to make space.
-      camera.position.set(0, 0.35, 11);
-      camera.lookAt(0, 0.1, 0);
-
-      function resize() {
-        const w = canvas.clientWidth || canvas.parentElement.clientWidth;
-        const h = canvas.clientHeight || canvas.parentElement.clientHeight;
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        renderer.setSize(w, h, false);
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-      }
-      window.addEventListener('resize', resize);
-      resize();
-
-      // A procedural studio-style environment (no external HDR file available) so
-      // metallic/glossy materials — the hematite sphere especially — actually
-      // reflect something instead of just responding to point lights. This is what
-      // real "glossy, reflects a complex environment" requires for a PBR material;
-      // without it, high-metalness surfaces just look flat and dark.
-      scene.environment = makeStudioEnvironment(THREE, renderer);
-
-      // Lighting: harder contrast than the original softer setup — a single strong
-      // key light plus dim ambient reads as "dramatic studio photography" (sharp
-      // highlights, real shadow falloff) rather than the flatter, evenly-lit look
-      // of the earlier low-contrast version.
-      scene.add(new THREE.AmbientLight(0x0f1a26, 0.35));
-      const keyLight = new THREE.DirectionalLight(0xfff4e0, 1.5);
-      keyLight.position.set(2, 3, 3.5);
-      scene.add(keyLight);
-      const tealRim = new THREE.PointLight(0x14b8a6, 1.4, 12);
-      tealRim.position.set(-2, -1, 2);
-      scene.add(tealRim);
-      const blueRim = new THREE.PointLight(0x2563eb, 1.0, 12);
-      blueRim.position.set(2, 1.5, 1.5);
-      scene.add(blueRim);
-
-      const group = new THREE.Group();
-      group.position.y = 0.55; // nudge the whole emblem up within the frame
-      scene.add(group);
-
-      const ROD_HALF = 1.6;
-      const ROD_BOTTOM_Y = -ROD_HALF, ROD_TOP_Y = ROD_HALF;
-
-      // --- Rod ---
-      // Dark blackened-iron, not polished chrome: darker base color, higher
-      // roughness (forged/worn metal isn't mirror-smooth), and the wear texture
-      // above for real tonal variation and scratch relief instead of a flat tint.
-      const rodMat = new THREE.MeshStandardMaterial({
-        color: 0x2e2e33,
-        map: makeMetalWearTexture(THREE, false),
-        bumpMap: makeMetalWearTexture(THREE, true), bumpScale: 0.02,
-        metalness: 0.85, roughness: 0.55
-      });
-      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, ROD_HALF * 2, 20), rodMat);
-      rod.position.y = 5; // starts above frame, drops in
-      group.add(rod);
-
-      // --- Shield: a thin pulsing wireframe only — a solid gradient fill was tried and
-      // looked heavy/cluttered, so the "protective boundary" is suggested by an outline
-      // that fades away once the caduceus itself is fully formed, not a filled backdrop.
-      const shieldShape = buildShieldShape(THREE);
-      const shieldPoints = shieldShape.getPoints(40).map(p => new THREE.Vector3(p.x, p.y, -0.35));
-      const shieldWireGeo = new THREE.BufferGeometry().setFromPoints(shieldPoints);
-      const shieldWire = new THREE.LineLoop(shieldWireGeo, new THREE.LineBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0 }));
-      shieldWire.scale.setScalar(1.35);
-      group.add(shieldWire);
-
-      // --- Twin snakes: a helix curve per snake, revealed by growing t=[0,progress] ---
-      function makeHelixCurve(turns, phase) {
-        return Object.assign(new THREE.Curve(), {
-          getPoint(t, target) {
-            const angle = phase + t * turns * Math.PI * 2;
-            const y = ROD_BOTTOM_Y + t * (ROD_TOP_Y - ROD_BOTTOM_Y) * 0.92;
-            const r = 0.16 + 0.02 * Math.sin(t * Math.PI);
-            const v = target || new THREE.Vector3();
-            return v.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
-          }
-        });
-      }
-
-      function wrappedCurve(base, progress) {
-        return Object.assign(new THREE.Curve(), {
-          getPoint(t, target) { return base.getPoint(t * Math.max(0.001, progress), target); }
-        });
-      }
-
-      // Both snakes share one color now (were blue + teal) — the two-tube helix still
-      // reads clearly as twin serpents without needing different hues to tell them apart.
-      const SNAKE_COLOR = 0x14b8a6;
-      const snakeA = { curve: makeHelixCurve(2.6, 0), color: SNAKE_COLOR, mesh: null };
-      const snakeB = { curve: makeHelixCurve(2.6, Math.PI), color: SNAKE_COLOR, mesh: null };
-      [snakeA, snakeB].forEach(s => {
-        // Same reasoning as the wing material: lower metalness so the scale map
-        // and bump relief actually show, instead of being drowned out by
-        // specular response with no environment map to reflect. emissiveIntensity
-        // dropped hard too — emissive isn't modulated by `map`, so it was adding a
-        // flat, uniform glow on top that washed out the scale contrast entirely.
-        s.material = new THREE.MeshStandardMaterial({
-          map: makeSnakeScaleTexture(THREE, s.color),
-          bumpMap: makeSnakeBumpTexture(THREE), bumpScale: 0.05,
-          emissive: s.color, emissiveIntensity: 0.08, metalness: 0.1, roughness: 0.55
-        });
-        // Head gets its OWN material — real snake heads have larger, irregular
-        // plates distinct from the small uniform body scales, plus a textured
-        // gold-iris eye instead of a flat color dot.
-        s.headMaterial = new THREE.MeshStandardMaterial({
-          map: makeSnakeHeadTexture(THREE, s.color),
-          bumpMap: makeSnakeHeadBumpTexture(THREE), bumpScale: 0.09,
-          metalness: 0.1, roughness: 0.5
-        });
-        s.head = new THREE.Group();
-        // Noticeably wider than the tube's max body radius so it actually reads as
-        // a head bulge rather than blending into the neck it's attached to.
-        const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.17, 20, 20), s.headMaterial);
-        headMesh.scale.set(1, 0.75, 1.5);
-        // headMesh is a sphere(radius 0.17) scaled (1, 0.75, 1.5), i.e. an ellipsoid
-        // with semi-axes (0.17, 0.1275, 0.255). At x=0.1, y=0.03 the ellipsoid's own
-        // surface sits at z ~= 0.197 — the first version placed the eyes at z=0.12,
-        // *inside* that surface, so they were fully hidden behind the solid head.
-        const eyeMat = new THREE.MeshBasicMaterial({ map: makeSnakeEyeTexture(THREE) });
-        const eyeGeo = new THREE.CircleGeometry(0.06, 16);
-        const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-        eyeL.position.set(0.1, 0.03, 0.21);
-        eyeL.rotation.y = Math.PI / 2.3;
-        const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-        eyeR.position.set(-0.1, 0.03, 0.21);
-        eyeR.rotation.y = -Math.PI / 2.3;
-        s.head.add(headMesh, eyeL, eyeR);
-        s.head.visible = false;
-        group.add(s.head);
-      });
-
-      // Real snakes taper — thin near the head/tail, thicker through the mid-body —
-      // instead of a uniform-diameter pipe. tGlobal is this point's position along
-      // the FULL final body (0=tail tip, 1=head), independent of how much has grown
-      // in so far, so the taper profile stays consistent as the snake grows rather
-      // than being re-stretched over whatever's currently visible.
-      function snakeBodyRadius(tGlobal) {
-        const taper = Math.sin(Math.PI * clamp01(tGlobal));
-        return 0.045 + 0.055 * taper;
-      }
-
-      function updateSnake(s, progress) {
-        if (progress <= 0.001) {
-          if (s.mesh) { s.mesh.visible = false; }
-          s.head.visible = false;
-          return;
-        }
-        const curve = wrappedCurve(s.curve, progress);
-        const segments = Math.max(8, Math.round(64 * progress));
-        const geo = buildTaperedTubeGeometry(THREE, curve, segments, 10, (tLocal) => snakeBodyRadius(tLocal * progress));
-        if (s.mesh) {
-          s.mesh.geometry.dispose();
-          s.mesh.geometry = geo;
-          s.mesh.visible = true;
-        } else {
-          s.mesh = new THREE.Mesh(geo, s.material);
-          group.add(s.mesh);
-        }
-
-        // Head rides the growing tip, oriented along the curve's tangent there, and
-        // pops in only over the last bit of growth so it doesn't appear prematurely.
-        const tip = curve.getPoint(1);
-        const tangent = curve.getTangent(1).normalize();
-        s.head.position.copy(tip);
-        s.head.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tangent);
-        const headScale = clamp01((progress - 0.85) / 0.15);
-        s.head.scale.setScalar(headScale);
-        s.head.visible = headScale > 0.001;
-      }
-
-      // --- Sphere cap: dark, glossy hematite — relies on scene.environment (set
-      // above) for the actual reflections; without an envMap this would just look
-      // like flat dark plastic regardless of how low the roughness is.
-      const sphere = new THREE.Mesh(
-        new THREE.SphereGeometry(0.17, 32, 32),
-        new THREE.MeshStandardMaterial({ color: 0x16161a, metalness: 0.85, roughness: 0.12, envMapIntensity: 1.4 })
-      );
-      sphere.position.y = ROD_TOP_Y + 0.08;
-      sphere.scale.setScalar(0.0001);
-      group.add(sphere);
-
-      // --- Wings: a fan of individual feathers per side, not one solid silhouette ---
-      // Natural raptor blue-brown instead of bright brand cyan — matches "rich,
-      // natural blue-brown" feathers rather than a glowing sci-fi accent color.
-      // A slate-blue base washed out to pale gray once the environment map + full
-      // light rig were added (mid-value colors read as near-white once enough
-      // light sources stack on a fairly diffuse/rough material). A darker, warmer
-      // brown base holds its own identity under the same lighting, and the
-      // existing teal/blue rim lights naturally cast cool color into the shadow
-      // side — a real blue+brown duotone from lighting, not just the flat albedo.
-      const WING_COLOR = 0x3d2f1f;
-      const wingR = buildWingGroup(THREE, WING_COLOR);
-      wingR.position.set(0.05, ROD_TOP_Y - 0.35, 0);
-      wingR.scale.set(0.001, 1, 1);
-      const wingL = buildWingGroup(THREE, WING_COLOR);
-      wingL.position.set(-0.05, ROD_TOP_Y - 0.35, 0);
-      wingL.scale.set(-0.001, 1, 1);
-      group.add(wingR, wingL);
-
-      // --- Timeline (seconds) ---
-      const T_ROD_DROP = [0.0, 0.55];
-      const T_SNAKE_GROW = [0.45, 2.15];
-      const T_SPHERE_POP = [2.15, 2.55];
-      const T_SHIELD_FADE = [2.15, 2.6];
-      const T_WING_POP = [2.3, 2.75];
-      const T_FLASH = 2.7;
-      const INTRO_DONE = T_WING_POP[1];
-
-      let flashed = false;
-      let revealed = false;
-      const clock = new THREE.Clock();
-      let elapsed = 0;
-
-      function frame(span) {
-        return clamp01((elapsed - span[0]) / (span[1] - span[0]));
-      }
-
-      function renderAtElapsed() {
-        // Rod drop
-        const rodT = easeOutCubic(frame(T_ROD_DROP));
-        rod.position.y = 5 + (0 - 5) * rodT;
-        shieldWire.material.opacity = 0.55 * clamp01((elapsed - 0.1) / 0.6) * (0.6 + 0.4 * Math.sin(elapsed * 6))
-          * (1 - easeOutCubic(frame(T_SHIELD_FADE)));
-
-        // Snakes grow (fast start, decelerate — eased reveal of the helix)
-        const snakeT = easeOutCubic(frame(T_SNAKE_GROW));
-        updateSnake(snakeA, snakeT);
-        updateSnake(snakeB, snakeT);
-
-        // Sphere pop
-        const sphereT = easeOutBack(frame(T_SPHERE_POP));
-        sphere.scale.setScalar(Math.max(0.0001, sphereT));
-
-        // Wings pop out fast with a little overshoot (like a bird snapping its wings
-        // open after resting), then settle into a slow continuous flap once fully open.
-        const wingPopT = easeOutBack(frame(T_WING_POP));
-        const popScale = Math.max(0.001, wingPopT);
-        wingR.scale.x = popScale;
-        wingL.scale.x = -popScale;
-        const flap = elapsed >= INTRO_DONE ? Math.sin((elapsed - INTRO_DONE) * 1.8) * 0.12 : 0;
-        wingR.rotation.z = flap;
-        wingL.rotation.z = -flap;
-
-        // Flash pulse once, right as the wings finish popping open
-        if (!flashed && elapsed >= T_FLASH) {
-          flashed = true;
-          if (flashEl) {
-            flashEl.classList.remove('flash-active');
-            void flashEl.offsetWidth;
-            flashEl.classList.add('flash-active');
-          }
-        }
-
-        if (!revealed && elapsed >= INTRO_DONE) {
-          revealed = true;
-          revealContent();
-        }
-
-        // Idle: the finished logo stays centered (no repositioning) and slowly
-        // rotates in place — a real 3D turntable, not a flat sway.
-        if (elapsed >= INTRO_DONE) {
-          group.rotation.y = (elapsed - INTRO_DONE) * 0.5;
-        }
-      }
-
-      function skipToEnd() {
-        if (elapsed >= INTRO_DONE) return;
-        elapsed = INTRO_DONE;
-      }
-      canvas.addEventListener('click', skipToEnd);
-
-      function tick() {
-        elapsed += clock.getDelta();
-        renderAtElapsed();
-        renderer.render(scene, camera);
-        requestAnimationFrame(tick);
-      }
-      requestAnimationFrame(tick);
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+      const hadSavedRxPlan = !!localStorage.getItem('aegis_rx_plan');
+      rxLoadState();
       const saved = JSON.parse(localStorage.getItem('aegis_schedule') || '[]');
-      if (saved.length > 0) {
+      if (saved.length > 0 && !hadSavedRxPlan) {
         const last = saved[saved.length - 1];
         if (last.slots) updateHomeSchedule(last.slots);
+      } else {
+        rxRenderHomeFromPlan();
+      }
+      const savedProfile = JSON.parse(localStorage.getItem('aegis_profile') || 'null');
+      if (savedProfile && savedProfile.fullName) {
+        onbState.fullName = savedProfile.fullName;
+        const nameEl = document.querySelector('#screen-home .name');
+        const avatarEl = document.getElementById('homeAvatar');
+        if (nameEl) nameEl.textContent = savedProfile.fullName;
+        if (avatarEl) avatarEl.textContent = onbInitials(savedProfile.fullName);
       }
       updateApiKeyBtnState();
-      initSplash3D();
+      initSplash2D();
     });
   </script>
 </body>
