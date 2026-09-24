@@ -3716,10 +3716,84 @@
     let pendingGalleryFiles = [];
 
     // ===================== VOICE-TRIGGERED SCAN =====================
-    // A pixel-heuristic auto-scan (contrast + steadiness) was tried here and removed:
-    // it can't tell "a medicine strip" apart from any other textured surface held
-    // still (a desk, a hand, a patterned shirt), so it fired on things that weren't
-    // medicine. Voice trigger replaces the guesswork with an explicit, reliable cue.
+    // A pixel-heuristic auto-scan (contrast + steadiness) was tried standalone and
+    // removed: it can't tell "a medicine strip" apart from any other textured
+    // surface held still (a desk, a hand, a patterned shirt), so it fired on things
+    // that weren't medicine. Voice trigger replaces the guesswork with an explicit,
+    // reliable cue — and is now paired with that same detail heuristic as a sanity
+    // gate: saying "scan" only fires the real capture if the frame actually looks
+    // like it has *something* in it, not a blank surface. This is a much lower bar
+    // than fully classifying "is this specifically medicine", which combined with
+    // requiring explicit voice intent first avoids the original false-positive problem.
+    function scanFrameHasDetail() {
+      const video = document.getElementById('cameraFeed');
+      const scanFrame = document.getElementById('scanFrame');
+      if (!video || !video.videoWidth || !video.videoHeight) return false;
+
+      const videoRect = video.getBoundingClientRect();
+      const frameRect = scanFrame.getBoundingClientRect();
+      const vW = video.videoWidth, vH = video.videoHeight;
+      if (videoRect.width === 0 || videoRect.height === 0) return false;
+
+      // object-fit: cover maps the native video frame to the displayed box by
+      // scaling to cover it and cropping the overflow evenly on both sides —
+      // undo that to find which native pixels the on-screen scan frame covers.
+      const scale = Math.max(videoRect.width / vW, videoRect.height / vH);
+      const dispW = vW * scale, dispH = vH * scale;
+      const cropX = (dispW - videoRect.width) / 2 / scale;
+      const cropY = (dispH - videoRect.height) / 2 / scale;
+
+      const srcX = (frameRect.left - videoRect.left) / scale + cropX;
+      const srcY = (frameRect.top - videoRect.top) / scale + cropY;
+      const srcW = frameRect.width / scale;
+      const srcH = frameRect.height / scale;
+
+      let analysisCanvas = document.getElementById('voiceScanAnalysisCanvas');
+      if (!analysisCanvas) {
+        analysisCanvas = document.createElement('canvas');
+        analysisCanvas.id = 'voiceScanAnalysisCanvas';
+        analysisCanvas.width = 64;
+        analysisCanvas.height = 40;
+        analysisCanvas.style.display = 'none';
+        document.body.appendChild(analysisCanvas);
+      }
+      const ctx = analysisCanvas.getContext('2d');
+      try {
+        ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, 64, 40);
+      } catch (err) {
+        return false;
+      }
+      const data = ctx.getImageData(0, 0, 64, 40).data;
+
+      let sum = 0, sumSq = 0, n = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        sum += gray;
+        sumSq += gray * gray;
+        n++;
+      }
+      const mean = sum / n;
+      const stdDev = Math.sqrt(Math.max(0, sumSq / n - mean * mean));
+      const brightnessOk = mean > 25 && mean < 235;
+      return brightnessOk && stdDev >= 14;
+    }
+
+    function attemptVoiceScan() {
+      if (scanFrameHasDetail()) {
+        captureAndProcess(); // stops voice listening internally, guarding against re-trigger
+        return;
+      }
+      const badge = document.getElementById('voiceHintBadge');
+      if (!badge) return;
+      badge.innerHTML = 'Nothing detected — align the medicine in the frame and say "Scan" again';
+      badge.classList.add('visible');
+      setTimeout(() => {
+        if (voiceShouldListen) {
+          badge.innerHTML = '<span class="mic-dot"></span>Listening — say "Scan"';
+        }
+      }, 2500);
+    }
+
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     let voiceRecognition = null;
     let voiceShouldListen = false;
@@ -3741,7 +3815,7 @@
             const transcript = event.results[i][0].transcript;
             console.log('[voice-scan] heard:', transcript);
             if (/\bscan\b/i.test(transcript)) {
-              captureAndProcess(); // stops voice listening internally, guarding against re-trigger
+              attemptVoiceScan();
               return;
             }
           }
