@@ -3,24 +3,38 @@ const fs = require('fs');
 const path = require('path');
 const cron = require('node-cron');
 
-// Read .env file
+// Load .env for local development only. Platforms like Railway inject variables
+// directly into process.env — no .env file exists in that container at all — so
+// this must merge into process.env rather than read into a separate object, and
+// must never overwrite a value the platform already set.
 const envPath = path.join(__dirname, '.env');
-const envVars = {};
 if (fs.existsSync(envPath)) {
   const envContent = fs.readFileSync(envPath, 'utf-8');
   envContent.split('\n').forEach(line => {
     const match = line.match(/^\s*([A-Z_]+)\s*=\s*(.+)\s*$/);
-    if (match) envVars[match[1]] = match[2].trim();
+    if (match && process.env[match[1]] === undefined) {
+      process.env[match[1]] = match[2].trim();
+    }
   });
 }
 
-const API_KEY = envVars.GEMINI_API_KEY || '';
-const TWILIO_SID = envVars.TWILIO_ACCOUNT_SID || '';
-const TWILIO_TOKEN = envVars.TWILIO_AUTH_TOKEN || '';
-const TWILIO_WHATSAPP = envVars.TWILIO_WHATSAPP_NUMBER || '';
+const API_KEY = process.env.GEMINI_API_KEY || '';
+const GROK_API_KEY = process.env.GROK_API_KEY || '';
+// Which provider actually serves scan/chat/schedule requests. Configurable because
+// we've hit provider-specific problems more than once (a deprecated Gemini model, a
+// Gemini free-tier daily quota) — switching should be a .env edit, not a code change.
+const AI_PROVIDER = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID || '';
+const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
+const TWILIO_WHATSAPP = process.env.TWILIO_WHATSAPP_NUMBER || '';
 
-if (!API_KEY || API_KEY === 'your-key-here') {
-  console.error('ERROR: Set your GEMINI_API_KEY in the .env file');
+if (AI_PROVIDER === 'grok') {
+  if (!GROK_API_KEY || GROK_API_KEY === 'your-grok-key-here') {
+    console.error('ERROR: AI_PROVIDER=grok but GROK_API_KEY is not set in the .env file');
+    process.exit(1);
+  }
+} else if (!API_KEY || API_KEY === 'your-key-here') {
+  console.error('ERROR: Set your GEMINI_API_KEY in the .env file (or set AI_PROVIDER=grok and GROK_API_KEY)');
   process.exit(1);
 }
 
@@ -118,7 +132,6 @@ async function sendWhatsAppReminder(phoneNumber, slot, scheduleId) {
 const htmlPath = path.join(__dirname, 'aegis-preview.html');
 let html = fs.readFileSync(htmlPath, 'utf-8');
 
-// Inject the API key as a global variable right after <head>
 // Reuse the exact reference drug dataset built for the medicine-validator Skill
 // (Assessment 2) instead of duplicating it — single source of truth.
 const REFERENCE_DRUGS_PATH = path.join(__dirname, '.claude', 'skills', 'medicine-validator', 'reference-drugs.json');
@@ -129,10 +142,133 @@ try {
   console.warn('  Could not load reference-drugs.json, prescription validation will be skipped:', err.message);
 }
 
+// NOTE: the real GEMINI_API_KEY is intentionally NOT injected into the page here.
+// It never leaves this process — the browser calls POST /api/gemini instead, and
+// this server makes the actual Gemini call. window.AEGIS_API_KEY is just a
+// non-secret "is the app ready" flag the client already checks before scanning.
 const injected = html.replace(
   '<head>',
-  `<head>\n  <script>window.AEGIS_API_KEY="${API_KEY}";window.AEGIS_REFERENCE_DRUGS=${referenceDrugsJson};</script>`
+  `<head>\n  <script>window.AEGIS_API_KEY="server-configured";window.AEGIS_REFERENCE_DRUGS=${referenceDrugsJson};</script>`
 );
+
+const AI_MODEL = 'gemini-3.6-flash';
+
+// Gemini's vision endpoint is observed to fail intermittently with 503 "high demand"
+// even when the service is otherwise healthy — retrying a couple of times with
+// backoff clears most of these transient failures instead of surfacing them to the user.
+const GEMINI_MAX_RETRIES = 2;
+const GEMINI_RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function callGeminiServerSide(systemPrompt, contents, temperature, overrideKey) {
+  const effectiveKey = overrideKey || API_KEY;
+  for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt++) {
+    let response;
+    try {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${effectiveKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents: contents,
+            generationConfig: { temperature: temperature }
+          })
+        }
+      );
+    } catch (networkErr) {
+      // fetch itself threw (e.g. connection reset) — treat like a retryable failure.
+      if (attempt === GEMINI_MAX_RETRIES) throw new Error(`Gemini request failed: ${networkErr.message}`);
+      console.warn(`  Gemini network error, retrying (attempt ${attempt + 1}/${GEMINI_MAX_RETRIES}): ${networkErr.message}`);
+      await delay(500 * Math.pow(2, attempt));
+      continue;
+    }
+
+    if (response.ok) {
+      const data = await response.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      return parts.map(p => p.text || '').join('');
+    }
+
+    const errBody = await response.text();
+    const isRetryable = GEMINI_RETRYABLE_STATUSES.has(response.status);
+    if (!isRetryable || attempt === GEMINI_MAX_RETRIES) {
+      throw new Error(`Gemini API error ${response.status}: ${errBody}`);
+    }
+
+    console.warn(`  Gemini call got ${response.status}, retrying (attempt ${attempt + 1}/${GEMINI_MAX_RETRIES})...`);
+    await delay(500 * Math.pow(2, attempt));
+  }
+}
+
+const GROK_MODEL = 'grok-4.6';
+const GROK_MAX_RETRIES = 2;
+const GROK_RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+// The client always builds `contents` in Gemini's shape (role + parts, with
+// inline_data for images) regardless of which provider is actually serving the
+// request — this converts it to OpenAI-style messages for Grok's API, so nothing
+// in aegis-preview.html needs to know or care which provider is active.
+function geminiContentsToOpenAiMessages(contents) {
+  return contents.map(c => ({
+    role: c.role === 'model' ? 'assistant' : 'user',
+    content: c.parts.map(p => {
+      if (p.text != null) return { type: 'text', text: p.text };
+      if (p.inline_data) return { type: 'image_url', image_url: { url: `data:${p.inline_data.mime_type};base64,${p.inline_data.data}` } };
+      return null;
+    }).filter(Boolean)
+  }));
+}
+
+async function callGrokServerSide(systemPrompt, contents, temperature, overrideKey) {
+  const effectiveKey = overrideKey || GROK_API_KEY;
+  const messages = [{ role: 'system', content: systemPrompt }, ...geminiContentsToOpenAiMessages(contents)];
+
+  for (let attempt = 0; attempt <= GROK_MAX_RETRIES; attempt++) {
+    let response;
+    try {
+      response = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${effectiveKey}`
+        },
+        body: JSON.stringify({ model: GROK_MODEL, messages, temperature })
+      });
+    } catch (networkErr) {
+      if (attempt === GROK_MAX_RETRIES) throw new Error(`Grok request failed: ${networkErr.message}`);
+      console.warn(`  Grok network error, retrying (attempt ${attempt + 1}/${GROK_MAX_RETRIES}): ${networkErr.message}`);
+      await delay(500 * Math.pow(2, attempt));
+      continue;
+    }
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || '';
+    }
+
+    const errBody = await response.text();
+    const isRetryable = GROK_RETRYABLE_STATUSES.has(response.status);
+    if (!isRetryable || attempt === GROK_MAX_RETRIES) {
+      throw new Error(`Grok API error ${response.status}: ${errBody}`);
+    }
+
+    console.warn(`  Grok call got ${response.status}, retrying (attempt ${attempt + 1}/${GROK_MAX_RETRIES})...`);
+    await delay(500 * Math.pow(2, attempt));
+  }
+}
+
+async function callAIServerSide(systemPrompt, contents, temperature, overrideKey) {
+  // A tester-supplied key always means "use it with whichever provider is
+  // currently configured" — we don't ask the client to know or care about that.
+  return AI_PROVIDER === 'grok'
+    ? callGrokServerSide(systemPrompt, contents, temperature, overrideKey)
+    : callGeminiServerSide(systemPrompt, contents, temperature, overrideKey);
+}
 
 // Parse JSON body helper
 function parseBody(req) {
@@ -149,7 +285,49 @@ function parseBody(req) {
   });
 }
 
+const ASSET_CONTENT_TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml' };
+
 const server = http.createServer(async (req, res) => {
+  // Static assets (logo images, etc.) — served straight from disk. Path is
+  // restricted to the assets/ directory and re-resolved to guard against ../ traversal.
+  if (req.method === 'GET' && req.url.startsWith('/assets/')) {
+    const requested = path.normalize(path.join(__dirname, req.url));
+    const assetsRoot = path.join(__dirname, 'assets');
+    if (requested.startsWith(assetsRoot) && fs.existsSync(requested)) {
+      const ext = path.extname(requested).toLowerCase();
+      res.writeHead(200, { 'Content-Type': ASSET_CONTENT_TYPES[ext] || 'application/octet-stream' });
+      res.end(fs.readFileSync(requested));
+    } else {
+      res.writeHead(404);
+      res.end('Not found');
+    }
+    return;
+  }
+
+  // API: Proxy AI calls — keeps GEMINI_API_KEY/GROK_API_KEY server-side only, never
+  // sent to the browser. Route name kept as /api/gemini for compatibility with the
+  // existing client; which provider actually handles it is chosen by AI_PROVIDER.
+  if (req.method === 'POST' && req.url === '/api/gemini') {
+    try {
+      const { systemPrompt, contents, temperature, userApiKey } = await parseBody(req);
+      if (!systemPrompt || !Array.isArray(contents)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'systemPrompt and contents are required' }));
+        return;
+      }
+      // userApiKey is optional and tester-supplied (bring-your-own-key from the
+      // frontend) — used only for this one call, never logged or persisted.
+      const text = await callAIServerSide(systemPrompt, contents, temperature ?? 0.3, userApiKey || null);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ text }));
+    } catch (err) {
+      console.error(`${AI_PROVIDER} proxy error:`, err.message);
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
   // API: Schedule reminders
   if (req.method === 'POST' && req.url === '/api/schedule') {
     try {
@@ -250,7 +428,9 @@ const server = http.createServer(async (req, res) => {
   res.end(injected);
 });
 
-const PORT = 3000;
+// Railway (and most PaaS hosts) assign the port via env var and route traffic to it —
+// the app must bind to that, not a hardcoded port.
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`\n  Aegis running at http://localhost:${PORT}`);
   loadSchedules();
