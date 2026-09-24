@@ -2830,7 +2830,7 @@
           <div class="splash-subtitle-3d">Your Intelligent Health Partner</div>
           <div class="splash-btn-wrap">
             <button class="splash-btn-3d" onclick="showScreen('screen-onb-carousel')">Get Started</button>
-            <p class="splash-login-line">Already have an account? <button type="button" class="splash-login-link">Log in</button></p>
+            <p class="splash-login-line">Already have an account? <button type="button" class="splash-login-link" onclick="showScreen('screen-login')">Log in</button></p>
           </div>
         </div>
       </div>
@@ -2877,6 +2877,47 @@
       </div>
 
       <!-- Onboarding: Authentication -->
+      <!-- Universal Login (separate from onboarding's sign-up auth screen) -->
+      <div class="screen onb-screen" id="screen-login">
+        <div class="onb-header">
+          <button class="onb-back-btn" onclick="showScreen('screen-splash')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <span></span>
+          <span style="width:48px;"></span>
+        </div>
+        <div class="onb-body">
+          <div class="onb-title">Welcome Back</div>
+          <div class="onb-subtitle">Log in to continue to your health dashboard.</div>
+          <button class="onb-social-btn" onclick="onbSocialAuth()">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.44 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.35-1.25-3.41-2.75C3.94 18.73 3 16.07 3 13.55c0-3.86 2.5-5.92 4.99-5.92 1.5 0 2.75.9 3.65.9.86 0 2.32-.91 3.99-.91.62 0 2.9.06 4.43 2.24-.12.08-2.4 1.4-2.4 4.34 0 3.44 3 4.7 3.4 4.85z"/></svg>
+            Continue with Apple
+          </button>
+          <button class="onb-social-btn" onclick="onbSocialAuth()">
+            <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Continue with Google
+          </button>
+          <div class="onb-divider">or continue with email</div>
+          <div class="onb-field" id="loginEmailField">
+            <input type="email" class="onb-field-input" id="loginEmailInput" placeholder=" " oninput="loginValidate()" onblur="loginValidate(true)">
+            <label class="onb-field-label" for="loginEmailInput">Email address</label>
+            <div class="onb-field-error-msg">Enter a valid email address.</div>
+          </div>
+          <div class="onb-field" id="loginPasswordField" style="position:relative;">
+            <input type="password" class="onb-field-input" id="loginPasswordInput" placeholder=" " style="padding-right:44px;" oninput="loginValidate()" onblur="loginValidate(true)">
+            <label class="onb-field-label" for="loginPasswordInput">Password</label>
+            <div class="onb-field-error-msg">Enter your password.</div>
+            <button type="button" onclick="loginTogglePasswordVisibility()" style="position:absolute; right:12px; top:14px; width:24px; height:24px; border:none; background:none; cursor:pointer; color:#94A3B8;">
+              <svg id="loginPwdEyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="onb-footer">
+          <button class="onb-primary-btn" id="loginContinueBtn" disabled onclick="loginSubmit()">Log In</button>
+          <p class="splash-login-line" style="margin-top:16px;">Don't have an account? <button type="button" class="splash-login-link" onclick="showScreen('screen-onb-carousel')">Sign Up</button></p>
+        </div>
+      </div>
+
       <div class="screen onb-screen" id="screen-onb-auth">
         <div class="onb-header">
           <button class="onb-back-btn" onclick="showScreen('screen-onb-carousel')">
@@ -3802,7 +3843,7 @@
       hideApiKeyModal();
     }
 
-    const screenOrder = ['screen-splash','screen-onb-carousel','screen-onb-auth','screen-onb-wizard','screen-onb-permissions','screen-onb-complete','screen-home','screen-rx-routine','screen-scanner','screen-result','screen-review','screen-schedule','screen-schedule-confirm','screen-chat'];
+    const screenOrder = ['screen-splash','screen-login','screen-onb-carousel','screen-onb-auth','screen-onb-wizard','screen-onb-permissions','screen-onb-complete','screen-home','screen-rx-routine','screen-scanner','screen-result','screen-review','screen-schedule','screen-schedule-confirm','screen-chat'];
     let currentScreenIdx = 0;
 
     function showScreen(id) {
@@ -3913,6 +3954,45 @@
       }
       continueBtn.disabled = !valid;
       onbState.email = input.value.trim();
+    }
+
+    // ===================== UNIVERSAL LOGIN =====================
+    function loginValidate(onBlur) {
+      const emailField = document.getElementById('loginEmailField');
+      const emailInput = document.getElementById('loginEmailInput');
+      const pwdField = document.getElementById('loginPasswordField');
+      const pwdInput = document.getElementById('loginPasswordInput');
+      const continueBtn = document.getElementById('loginContinueBtn');
+
+      const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim());
+      emailField.classList.toggle('filled', emailInput.value.length > 0);
+      if (onBlur || emailInput.value.length > 0) {
+        emailField.classList.toggle('error', emailInput.value.length > 0 && !emailValid);
+      }
+
+      const pwdValid = pwdInput.value.length > 0;
+      pwdField.classList.toggle('filled', pwdInput.value.length > 0);
+      if (onBlur) {
+        pwdField.classList.toggle('error', !pwdValid);
+      }
+
+      continueBtn.disabled = !(emailValid && pwdValid);
+    }
+
+    function loginTogglePasswordVisibility() {
+      const input = document.getElementById('loginPasswordInput');
+      const icon = document.getElementById('loginPwdEyeIcon');
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      icon.innerHTML = showing
+        ? '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>'
+        : '<path d="M17.94 17.94A10.94 10.94 0 0112 19c-7 0-11-7-11-7a21.8 21.8 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 7 11 7a21.6 21.6 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22"/>';
+    }
+
+    function loginSubmit() {
+      // No real auth backend in this preview — a valid email + non-empty
+      // password is treated as a successful login, same as onbSocialAuth().
+      showScreen('screen-home');
     }
 
     // --- Step 3: Multi-step wizard ---
@@ -5663,16 +5743,12 @@ Rules:
       return hour + ':' + parts[1] + ' ' + ampm;
     }
 
-    function rxSaveState() {
-      localStorage.setItem('aegis_rx_plan', JSON.stringify(rxPlan));
-    }
-    function rxLoadState() {
-      const saved = JSON.parse(localStorage.getItem('aegis_rx_plan') || 'null');
-      if (saved && Array.isArray(saved.medicines)) {
-        rxPlan = saved;
-        rxNextId = Math.max(0, ...rxPlan.medicines.map(m => m.id)) + 1;
-      }
-    }
+    // Intentionally in-memory only (no localStorage) — edits made during a
+    // session (add/edit/delete/taken toggles) stick around until the app is
+    // reloaded, but every fresh load always starts from the demo prescription
+    // defined above, rather than replaying a previous session's Clear All.
+    function rxSaveState() {}
+    function rxLoadState() {}
     // Called whenever a real scan is confirmed via the existing scan->schedule
     // flow, so the Active Plan list and Home's Today's Medications stay one
     // source of truth instead of drifting apart.
@@ -6034,15 +6110,9 @@ Be brief and direct:
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-      const hadSavedRxPlan = !!localStorage.getItem('aegis_rx_plan');
-      rxLoadState();
-      const saved = JSON.parse(localStorage.getItem('aegis_schedule') || '[]');
-      if (saved.length > 0 && !hadSavedRxPlan) {
-        const last = saved[saved.length - 1];
-        if (last.slots) updateHomeSchedule(last.slots);
-      } else {
-        rxRenderHomeFromPlan();
-      }
+      // Always start from the demo prescription on a fresh load — a previous
+      // session's scan/edits/Clear All never carries over (see rxSaveState).
+      rxRenderHomeFromPlan();
       const savedProfile = JSON.parse(localStorage.getItem('aegis_profile') || 'null');
       if (savedProfile && savedProfile.fullName) {
         onbState.fullName = savedProfile.fullName;
